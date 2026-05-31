@@ -2,6 +2,7 @@ import 'app_enums.dart';
 
 class RoomEntity {
   final String id;
+  final String roomCode;
   final String title;
   final int price; // per month
   final String address;
@@ -22,8 +23,17 @@ class RoomEntity {
   final String landlordPhone;
   final String landlordAvatarUrl;
 
+  // Missing details for marketplace refinement
+  final double? usableArea;
+  final double? length;
+  final double? width;
+  final String? district;
+  final double? latitude;
+  final double? longitude;
+
   const RoomEntity({
     required this.id,
+    required this.roomCode,
     required this.title,
     required this.price,
     required this.address,
@@ -41,6 +51,12 @@ class RoomEntity {
     required this.landlordName,
     required this.landlordPhone,
     required this.landlordAvatarUrl,
+    this.usableArea,
+    this.length,
+    this.width,
+    this.district,
+    this.latitude,
+    this.longitude,
   });
 
   String get primaryImageUrl {
@@ -53,6 +69,7 @@ class RoomEntity {
 
   RoomEntity copyWith({
     String? id,
+    String? roomCode,
     String? title,
     int? price,
     String? address,
@@ -71,9 +88,16 @@ class RoomEntity {
     String? landlordName,
     String? landlordPhone,
     String? landlordAvatarUrl,
+    double? usableArea,
+    double? length,
+    double? width,
+    String? district,
+    double? latitude,
+    double? longitude,
   }) {
     return RoomEntity(
       id: id ?? this.id,
+      roomCode: roomCode ?? this.roomCode,
       title: title ?? this.title,
       price: price ?? this.price,
       address: address ?? this.address,
@@ -93,6 +117,12 @@ class RoomEntity {
       landlordName: landlordName ?? this.landlordName,
       landlordPhone: landlordPhone ?? this.landlordPhone,
       landlordAvatarUrl: landlordAvatarUrl ?? this.landlordAvatarUrl,
+      usableArea: usableArea ?? this.usableArea,
+      length: length ?? this.length,
+      width: width ?? this.width,
+      district: district ?? this.district,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
     );
   }
 }

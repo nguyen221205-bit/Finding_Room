@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -22,8 +23,7 @@ class LandlordVerificationScreen extends StatefulWidget {
       _LandlordVerificationScreenState();
 }
 
-class _LandlordVerificationScreenState
-    extends State<LandlordVerificationScreen>
+class _LandlordVerificationScreenState extends State<LandlordVerificationScreen>
     with UnsavedFormMixin<LandlordVerificationScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final ImagePicker _imagePicker = ImagePicker();
@@ -35,7 +35,7 @@ class _LandlordVerificationScreenState
   // 2: Review & Confirm
   int _currentStep = -1;
   String _verificationType = 'personal'; // 'personal' or 'business'
-  
+
   // CCCD image paths
   String _frontIdImagePath = '';
   String _backIdImagePath = '';
@@ -48,7 +48,7 @@ class _LandlordVerificationScreenState
   late final TextEditingController _addressCtrl;
   late final TextEditingController _taxCodeCtrl;
   late final TextEditingController _purposeCtrl;
-  
+
   bool _isRequirementsExpanded = true;
   bool _isSubmitting = false;
   bool _isSubmittedSuccessfully = false;
@@ -69,7 +69,7 @@ class _LandlordVerificationScreenState
     _addressCtrl = TextEditingController(text: request?.currentAddress ?? '');
     _taxCodeCtrl = TextEditingController(text: request?.taxCode ?? '');
     _purposeCtrl = TextEditingController(text: request?.purpose ?? '');
-    
+
     _frontIdImagePath = request?.frontIdImage ?? '';
     _backIdImagePath = request?.backIdImage ?? '';
     _selfieWithIdImagePath = request?.selfieWithIdImage ?? '';
@@ -166,7 +166,8 @@ class _LandlordVerificationScreenState
     if (_isSubmitting) return;
 
     final AuthProvider auth = context.read<AuthProvider>();
-    final LandlordRequestProvider provider = context.read<LandlordRequestProvider>();
+    final LandlordRequestProvider provider = context
+        .read<LandlordRequestProvider>();
 
     setState(() => _isSubmitting = true);
     bool submitted = false;
@@ -179,7 +180,7 @@ class _LandlordVerificationScreenState
         identityNumber: _identityNumberCtrl.text,
         currentAddress: _addressCtrl.text,
         identityImageUrl: _frontIdImagePath, // compatibility
-        requestMessage: _purposeCtrl.text,   // compatibility
+        requestMessage: _purposeCtrl.text, // compatibility
         verificationType: _verificationType,
         frontIdImage: _frontIdImagePath,
         backIdImage: _backIdImagePath,
@@ -237,12 +238,13 @@ class _LandlordVerificationScreenState
 
   // --- Step INDICATORS ---
   Widget _buildStepIndicator() {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
+        border: Border.all(color: theme.dividerColor),
       ),
       child: Row(
         children: <Widget>[
@@ -269,8 +271,8 @@ class _LandlordVerificationScreenState
             backgroundColor: isCompleted
                 ? Colors.green
                 : isActive
-                    ? theme.colorScheme.primary
-                    : Colors.grey[300],
+                ? theme.colorScheme.primary
+                : theme.colorScheme.surfaceContainerHighest,
             child: isCompleted
                 ? const Icon(Icons.check, size: 16, color: Colors.white)
                 : Text(
@@ -278,7 +280,7 @@ class _LandlordVerificationScreenState
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: isActive ? Colors.white : Colors.grey[600],
+                      color: isActive ? Colors.white : theme.hintColor,
                     ),
                   ),
           ),
@@ -310,10 +312,12 @@ class _LandlordVerificationScreenState
     final theme = Theme.of(context);
     return Card(
       elevation: 0,
-      color: theme.colorScheme.primaryContainer.withOpacity(0.08),
+      color: theme.colorScheme.primaryContainer.withValues(alpha: 0.08),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: theme.colorScheme.primary.withOpacity(0.2)),
+        side: BorderSide(
+          color: theme.colorScheme.primary.withValues(alpha: 0.2),
+        ),
       ),
       child: Theme(
         data: theme.copyWith(dividerColor: Colors.transparent),
@@ -338,17 +342,27 @@ class _LandlordVerificationScreenState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildRequirementItem('1. Thông tin rõ ràng, không bị che khuất, rách, tẩy xóa'),
+                  _buildRequirementItem(
+                    '1. Thông tin rõ ràng, không bị che khuất, rách, tẩy xóa',
+                  ),
                   const SizedBox(height: 6),
-                  _buildRequirementItem('2. Đảm bảo thông tin trùng khớp với CCCD'),
+                  _buildRequirementItem(
+                    '2. Đảm bảo thông tin trùng khớp với CCCD',
+                  ),
                   const SizedBox(height: 6),
-                  _buildRequirementItem('3. Đảm bảo hình ảnh rõ nét và không bị mờ'),
+                  _buildRequirementItem(
+                    '3. Đảm bảo hình ảnh rõ nét và không bị mờ',
+                  ),
                   const SizedBox(height: 6),
-                  _buildRequirementItem('4. Đảm bảo dấu đỏ trên CCCD của bạn rõ ràng'),
+                  _buildRequirementItem(
+                    '4. Đảm bảo dấu đỏ trên CCCD của bạn rõ ràng',
+                  ),
                   const SizedBox(height: 6),
                   _buildRequirementItem('5. Đảm bảo CCCD của bạn còn thời hạn'),
                   const SizedBox(height: 6),
-                  _buildRequirementItem('6. Cần cung cấp ảnh chụp bản thân cầm CCCD'),
+                  _buildRequirementItem(
+                    '6. Cần cung cấp ảnh chụp bản thân cầm CCCD',
+                  ),
                 ],
               ),
             ),
@@ -365,10 +379,7 @@ class _LandlordVerificationScreenState
         const Icon(Icons.check_circle_outline, size: 16, color: Colors.green),
         const SizedBox(width: 8),
         Expanded(
-          child: Text(
-            text,
-            style: const TextStyle(fontSize: 13, height: 1.3),
-          ),
+          child: Text(text, style: const TextStyle(fontSize: 13, height: 1.3)),
         ),
       ],
     );
@@ -384,7 +395,9 @@ class _LandlordVerificationScreenState
       children: [
         Text(
           'Đăng ký chủ nhà trọ',
-          style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 8),
         Text(
@@ -392,7 +405,7 @@ class _LandlordVerificationScreenState
           style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
         ),
         const SizedBox(height: 24),
-        
+
         // Option 1: Personal
         _buildSelectionCard(
           title: 'Xác thực cá nhân',
@@ -432,14 +445,14 @@ class _LandlordVerificationScreenState
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey[300]!),
-          color: Colors.white,
+          border: Border.all(color: theme.dividerColor),
+          color: theme.cardColor,
         ),
         child: Row(
           children: [
             CircleAvatar(
               radius: 26,
-              backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
+              backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
               child: Icon(icon, color: theme.colorScheme.primary, size: 28),
             ),
             const SizedBox(width: 16),
@@ -449,12 +462,17 @@ class _LandlordVerificationScreenState
                 children: [
                   Text(
                     title,
-                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey[600], fontSize: 13),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: Colors.grey[600],
+                      fontSize: 13,
+                    ),
                   ),
                 ],
               ),
@@ -476,10 +494,12 @@ class _LandlordVerificationScreenState
         const SizedBox(height: 20),
         _buildRequirementsSection(),
         const SizedBox(height: 20),
-        
+
         Text(
           'Tải lên hình ảnh giấy tờ',
-          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 12),
 
@@ -518,7 +538,9 @@ class _LandlordVerificationScreenState
                 onPressed: () => setState(() => _currentStep = -1),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 child: const Text('Quay lại'),
               ),
@@ -526,14 +548,17 @@ class _LandlordVerificationScreenState
             const SizedBox(width: 16),
             Expanded(
               child: ElevatedButton(
-                onPressed: (_frontIdImagePath.isNotEmpty &&
+                onPressed:
+                    (_frontIdImagePath.isNotEmpty &&
                         _backIdImagePath.isNotEmpty &&
                         _selfieWithIdImagePath.isNotEmpty)
                     ? () => setState(() => _currentStep = 1)
                     : null,
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 child: const Text('Tiếp theo'),
               ),
@@ -556,9 +581,9 @@ class _LandlordVerificationScreenState
     return Container(
       height: 160,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(color: theme.dividerColor),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
@@ -573,42 +598,61 @@ class _LandlordVerificationScreenState
                     children: [
                       CircleAvatar(
                         radius: 20,
-                        backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
-                        child: Icon(Icons.add_a_photo_outlined, color: theme.colorScheme.primary, size: 20),
+                        backgroundColor: theme.colorScheme.primary.withValues(
+                          alpha: 0.1,
+                        ),
+                        child: Icon(
+                          Icons.add_a_photo_outlined,
+                          color: theme.colorScheme.primary,
+                          size: 20,
+                        ),
                       ),
                       const SizedBox(height: 8),
-                      Text(label, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                      Text(
+                        label,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
                       const SizedBox(height: 4),
-                      Text('Nhấp để chụp hoặc tải lên', style: TextStyle(color: Colors.grey[500], fontSize: 11)),
+                      Text(
+                        'Nhấp để chụp hoặc tải lên',
+                        style: TextStyle(color: Colors.grey[500], fontSize: 11),
+                      ),
                     ],
                   ),
                 ),
               )
             else
               Positioned.fill(
-                child: Image.file(
-                  File(imagePath),
-                  fit: BoxFit.cover,
-                ),
+                child: kIsWeb
+                    ? Image.network(imagePath, fit: BoxFit.cover)
+                    : Image.file(File(imagePath), fit: BoxFit.cover),
               ),
             if (hasImage) ...[
               Positioned.fill(
-                child: Container(
-                  color: Colors.black.withOpacity(0.2),
-                ),
+                child: Container(color: Colors.black.withValues(alpha: 0.2)),
               ),
               Positioned(
                 bottom: 12,
                 left: 12,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.6),
+                    color: Colors.black.withValues(alpha: 0.6),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     label,
-                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
@@ -619,18 +663,26 @@ class _LandlordVerificationScreenState
                   children: [
                     CircleAvatar(
                       radius: 16,
-                      backgroundColor: Colors.black.withOpacity(0.6),
+                      backgroundColor: Colors.black.withValues(alpha: 0.6),
                       child: IconButton(
-                        icon: const Icon(Icons.edit, size: 14, color: Colors.white),
+                        icon: const Icon(
+                          Icons.edit,
+                          size: 14,
+                          color: Colors.white,
+                        ),
                         onPressed: onPick,
                       ),
                     ),
                     const SizedBox(width: 8),
                     CircleAvatar(
                       radius: 16,
-                      backgroundColor: Colors.black.withOpacity(0.6),
+                      backgroundColor: Colors.black.withValues(alpha: 0.6),
                       child: IconButton(
-                        icon: const Icon(Icons.close, size: 14, color: Colors.white),
+                        icon: const Icon(
+                          Icons.close,
+                          size: 14,
+                          color: Colors.white,
+                        ),
                         onPressed: onClear,
                       ),
                     ),
@@ -654,10 +706,12 @@ class _LandlordVerificationScreenState
         children: [
           _buildStepIndicator(),
           const SizedBox(height: 20),
-          
+
           Text(
             'Nhập thông tin cá nhân',
-            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 16),
 
@@ -669,7 +723,7 @@ class _LandlordVerificationScreenState
                 Validators.requiredField(value, label: 'Họ tên'),
           ),
           AppSpacing.vMd,
-          
+
           AppTextField(
             controller: _identityNumberCtrl,
             label: 'Số CCCD',
@@ -731,7 +785,9 @@ class _LandlordVerificationScreenState
                   onPressed: () => setState(() => _currentStep = 0),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   child: const Text('Quay lại'),
                 ),
@@ -746,7 +802,9 @@ class _LandlordVerificationScreenState
                   },
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   child: const Text('Tiếp theo'),
                 ),
@@ -769,7 +827,9 @@ class _LandlordVerificationScreenState
 
         Text(
           'Xác nhận thông tin xác thực',
-          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 16),
 
@@ -779,7 +839,9 @@ class _LandlordVerificationScreenState
           items: {
             'Họ và tên': _fullNameCtrl.text,
             'Số CCCD': _identityNumberCtrl.text,
-            'Mã số thuế': _taxCodeCtrl.text.isEmpty ? 'Không cung cấp' : _taxCodeCtrl.text,
+            'Mã số thuế': _taxCodeCtrl.text.isEmpty
+                ? 'Không cung cấp'
+                : _taxCodeCtrl.text,
           },
         ),
         const SizedBox(height: 16),
@@ -799,25 +861,40 @@ class _LandlordVerificationScreenState
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: theme.cardColor,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.grey[200]!),
+            border: Border.all(color: theme.dividerColor),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 'Hình ảnh tài liệu',
-                style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.primary),
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.primary,
+                ),
               ),
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Expanded(child: _buildReviewThumbnail('Mặt trước', _frontIdImagePath)),
+                  Expanded(
+                    child: _buildReviewThumbnail(
+                      'Mặt trước',
+                      _frontIdImagePath,
+                    ),
+                  ),
                   const SizedBox(width: 8),
-                  Expanded(child: _buildReviewThumbnail('Mặt sau', _backIdImagePath)),
+                  Expanded(
+                    child: _buildReviewThumbnail('Mặt sau', _backIdImagePath),
+                  ),
                   const SizedBox(width: 8),
-                  Expanded(child: _buildReviewThumbnail('Selfie', _selfieWithIdImagePath)),
+                  Expanded(
+                    child: _buildReviewThumbnail(
+                      'Selfie',
+                      _selfieWithIdImagePath,
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -833,7 +910,9 @@ class _LandlordVerificationScreenState
                 onPressed: () => setState(() => _currentStep = 1),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 child: const Text('Quay lại'),
               ),
@@ -844,13 +923,18 @@ class _LandlordVerificationScreenState
                 onPressed: _isSubmitting ? null : _submit,
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 child: _isSubmitting
                     ? const SizedBox(
                         height: 20,
                         width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
                       )
                     : const Text('Xác nhận & Gửi'),
               ),
@@ -861,44 +945,55 @@ class _LandlordVerificationScreenState
     );
   }
 
-  Widget _buildReviewSection({required String title, required Map<String, String> items}) {
+  Widget _buildReviewSection({
+    required String title,
+    required Map<String, String> items,
+  }) {
     final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey[200]!),
+        border: Border.all(color: theme.dividerColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.primary),
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.primary,
+            ),
           ),
           const SizedBox(height: 8),
-          ...items.entries.map((entry) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4.0),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(
-                      width: 120,
-                      child: Text(
-                        entry.key,
-                        style: const TextStyle(color: Colors.grey, fontSize: 13),
+          ...items.entries.map(
+            (entry) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4.0),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: 120,
+                    child: Text(
+                      entry.key,
+                      style: const TextStyle(color: Colors.grey, fontSize: 13),
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      entry.value,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
                       ),
                     ),
-                    Expanded(
-                      child: Text(
-                        entry.value,
-                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                      ),
-                    ),
-                  ],
-                ),
-              )),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -915,12 +1010,19 @@ class _LandlordVerificationScreenState
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(8),
-            child: Image.file(
-              File(imagePath),
-              width: double.infinity,
-              height: double.infinity,
-              fit: BoxFit.cover,
-            ),
+            child: kIsWeb
+                ? Image.network(
+                    imagePath,
+                    width: double.infinity,
+                    height: double.infinity,
+                    fit: BoxFit.cover,
+                  )
+                : Image.file(
+                    File(imagePath),
+                    width: double.infinity,
+                    height: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
           ),
         ),
         const SizedBox(height: 4),
@@ -1000,10 +1102,10 @@ class _LandlordVerificationScreenState
     final String appBarTitle = _currentStep == -1
         ? 'Đăng ký chủ nhà trọ'
         : _currentStep == 0
-            ? 'Xác minh CCCD'
-            : _currentStep == 1
-                ? 'Thông tin cá nhân'
-                : 'Xác nhận thông tin';
+        ? 'Xác minh CCCD'
+        : _currentStep == 1
+        ? 'Thông tin cá nhân'
+        : 'Xác nhận thông tin';
 
     return buildUnsavedFormGuard(
       child: DismissKeyboard(
@@ -1037,10 +1139,10 @@ class _LandlordVerificationScreenState
                 child: _currentStep == -1
                     ? _buildTypeSelectionView()
                     : _currentStep == 0
-                        ? _buildStep0CCCDView()
-                        : _currentStep == 1
-                            ? _buildStep1FormView()
-                            : _buildStep2ConfirmationView(),
+                    ? _buildStep0CCCDView()
+                    : _currentStep == 1
+                    ? _buildStep1FormView()
+                    : _buildStep2ConfirmationView(),
               ),
             ),
           ),

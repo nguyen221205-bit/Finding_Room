@@ -4,9 +4,9 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../domain/entities/app_enums.dart';
 import '../../../domain/entities/landlord_request_entity.dart';
+import '../../../domain/entities/user_entity.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/landlord_request_provider.dart';
-import '../../providers/role_provider.dart';
 import '../../widgets/app_dialogs.dart';
 import '../../widgets/app_image.dart';
 import '../../widgets/app_snackbar.dart';
@@ -26,37 +26,12 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
   String? _processingRequestId;
 
   Future<String?> _askRejectReason(BuildContext context) {
-    final TextEditingController reasonController = TextEditingController();
-
-    return showDialog<String>(
+    return AppDialogs.showRejectionDialog(
       context: context,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: const Text('Reject request'),
-          content: TextField(
-            controller: reasonController,
-            maxLines: 3,
-            autofocus: true,
-            decoration: const InputDecoration(
-              labelText: 'Reason',
-              hintText: 'Explain why this verification was rejected',
-            ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () {
-                Navigator.of(dialogContext).pop(reasonController.text);
-              },
-              child: const Text('Reject'),
-            ),
-          ],
-        );
-      },
-    ).whenComplete(reasonController.dispose);
+      title: 'Reject request',
+      label: 'Reason',
+      hint: 'Explain why this verification was rejected',
+    );
   }
 
   @override
@@ -115,7 +90,8 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute<void>(
-                        builder: (_) => RequestDetailScreen(requestId: request.id),
+                        builder: (_) =>
+                            RequestDetailScreen(requestId: request.id),
                       ),
                     );
                   },
@@ -128,8 +104,12 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
                           children: <Widget>[
                             Expanded(
                               child: Text(
-                                'User: ${request.userId}',
-                                style: Theme.of(context).textTheme.titleMedium,
+                                'Mã yêu cầu: ${request.verificationCode}',
+                                style: Theme.of(context).textTheme.titleMedium
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.blue[800],
+                                    ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -141,6 +121,21 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
                         _IdentityPreview(imagePath: request.identityImageUrl),
                         AppSpacing.vMd,
                         _InfoLine(label: 'Full name', value: request.fullName),
+                        FutureBuilder<UserEntity?>(
+                          future: context.read<AuthProvider>().getUserById(
+                            request.userId,
+                          ),
+                          builder: (context, snapshot) {
+                            final user = snapshot.data;
+                            if (user == null || user.userCode.isEmpty) {
+                              return const SizedBox.shrink();
+                            }
+                            return _InfoLine(
+                              label: 'Mã người dùng',
+                              value: user.userCode,
+                            );
+                          },
+                        ),
                         _InfoLine(label: 'Phone', value: request.phoneNumber),
                         _InfoLine(
                           label: 'Identity number',
@@ -169,7 +164,11 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
                         const Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.visibility_outlined, size: 16, color: Colors.blue),
+                            Icon(
+                              Icons.visibility_outlined,
+                              size: 16,
+                              color: Colors.blue,
+                            ),
                             SizedBox(width: 6),
                             Text(
                               'Chạm để xem chi tiết đầy đủ & duyệt ảnh',
@@ -183,94 +182,97 @@ class _ManageRequestsScreenState extends State<ManageRequestsScreen> {
                         ),
                         if (request.status ==
                             LandlordRequestStatus.pending) ...<Widget>[
-                        AppSpacing.vMd,
-                        Row(
-                          children: <Widget>[
-                            Expanded(
-                              child: FilledButton(
-                                onPressed: isProcessing
-                                    ? null
-                                    : () async {
-                                        final messenger = ScaffoldMessenger.of(context);
-                                        final bool confirm = await AppDialogs.confirmApprove(
-                                          context,
-                                          "landlord request for ${request.fullName}",
-                                        );
-                                        if (!confirm || !mounted) return;
+                          AppSpacing.vMd,
+                          Row(
+                            children: <Widget>[
+                              Expanded(
+                                child: FilledButton(
+                                  onPressed: isProcessing
+                                      ? null
+                                      : () async {
+                                          final messenger =
+                                              ScaffoldMessenger.of(context);
+                                          final bool confirm =
+                                              await AppDialogs.confirmApprove(
+                                                context,
+                                                "landlord request for ${request.fullName}",
+                                              );
+                                          if (!confirm || !mounted) return;
 
-                                        setState(
-                                          () =>
-                                              _processingRequestId = request.id,
-                                        );
-                                        final bool ok = provider.approveRequest(
-                                          request.id,
-                                        );
-                                        if (mounted) {
                                           setState(
-                                            () => _processingRequestId = null,
+                                            () => _processingRequestId =
+                                                request.id,
                                           );
-                                          AppSnackbar.showWithMessenger(
-                                            messenger,
-                                            ok
-                                                ? 'Request approved.'
-                                                : 'Could not approve request.',
-                                          );
-                                        }
-                                      },
-                                child: isProcessing
-                                    ? const SizedBox(
-                                        width: 18,
-                                        height: 18,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      )
-                                    : const Text('Approve'),
+                                          final bool ok = await provider
+                                              .approveRequest(request.id);
+                                          if (mounted) {
+                                            setState(
+                                              () => _processingRequestId = null,
+                                            );
+                                            AppSnackbar.showWithMessenger(
+                                              messenger,
+                                              ok
+                                                  ? 'Request approved.'
+                                                  : 'Could not approve request.',
+                                            );
+                                          }
+                                        },
+                                  child: isProcessing
+                                      ? const SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                      : const Text('Approve'),
+                                ),
                               ),
-                            ),
-                            AppSpacing.hMd,
-                            Expanded(
-                              child: OutlinedButton(
-                                onPressed: isProcessing
-                                    ? null
-                                    : () async {
-                                        final messenger = ScaffoldMessenger.of(context);
-                                        final String? reason =
-                                            await _askRejectReason(context);
-                                        if (reason == null) return;
+                              AppSpacing.hMd,
+                              Expanded(
+                                child: OutlinedButton(
+                                  onPressed: isProcessing
+                                      ? null
+                                      : () async {
+                                          final messenger =
+                                              ScaffoldMessenger.of(context);
+                                          final String? reason =
+                                              await _askRejectReason(context);
+                                          if (reason == null) return;
 
-                                        if (!mounted) return;
-                                        setState(
-                                          () =>
-                                              _processingRequestId = request.id,
-                                        );
-                                        final bool ok = provider.rejectRequest(
-                                          requestId: request.id,
-                                          reason: reason,
-                                        );
-                                        if (mounted) {
+                                          if (!mounted) return;
                                           setState(
-                                            () => _processingRequestId = null,
+                                            () => _processingRequestId =
+                                                request.id,
                                           );
-                                          AppSnackbar.showWithMessenger(
-                                            messenger,
-                                            ok
-                                                ? 'Request rejected.'
-                                                : 'Could not reject request.',
-                                          );
-                                        }
-                                      },
-                                child: const Text('Reject'),
+                                          final bool ok = await provider
+                                              .rejectRequest(
+                                                requestId: request.id,
+                                                reason: reason,
+                                              );
+                                          if (mounted) {
+                                            setState(
+                                              () => _processingRequestId = null,
+                                            );
+                                            AppSnackbar.showWithMessenger(
+                                              messenger,
+                                              ok
+                                                  ? 'Request rejected.'
+                                                  : 'Could not reject request.',
+                                            );
+                                          }
+                                        },
+                                  child: const Text('Reject'),
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
+                            ],
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                 ),
-              ),
-            );
+              );
             },
           );
         },

@@ -13,16 +13,22 @@ class RoleProvider extends ChangeNotifier {
 
   // Keep existing availableRoles for test and backward compatibility
   List<UserRole> _availableRoles = const <UserRole>[UserRole.user];
-  List<UserRole> get availableRoles => List<UserRole>.unmodifiable(_availableRoles);
+  List<UserRole> get availableRoles =>
+      List<UserRole>.unmodifiable(_availableRoles);
 
   // Keep original currentMode / currentRole properties so existing code compiles and passes
   UserRole get currentMode {
-    if (_isAdmin && _activeMode == ActiveUserMode.renter && _availableRoles.contains(UserRole.admin) && _currentModeBacking == UserRole.admin) {
+    if (_isAdmin &&
+        _activeMode == ActiveUserMode.renter &&
+        _availableRoles.contains(UserRole.admin) &&
+        _currentModeBacking == UserRole.admin) {
       return UserRole.admin;
     }
-    return _activeMode == ActiveUserMode.landlord ? UserRole.landlord : UserRole.user;
+    return _activeMode == ActiveUserMode.landlord
+        ? UserRole.landlord
+        : UserRole.user;
   }
-  
+
   UserRole get currentRole => currentMode;
 
   // Private backing field for the backward-compatible switchMode
@@ -58,7 +64,7 @@ class RoleProvider extends ChangeNotifier {
 
   void switchMode(UserRole role) {
     if (!canSwitchTo(role)) return;
-    
+
     _currentModeBacking = role;
     if (role == UserRole.landlord) {
       _activeMode = ActiveUserMode.landlord;

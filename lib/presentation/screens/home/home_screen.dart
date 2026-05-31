@@ -10,6 +10,8 @@ import '../../widgets/empty_state.dart';
 import '../../widgets/loading_placeholder.dart';
 import '../../widgets/room_card.dart';
 import '../../widgets/section_header.dart';
+import '../../providers/notification_provider.dart';
+import '../notification/notification_inbox_screen.dart';
 import '../room/room_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -52,13 +54,29 @@ class _HomeScreenState extends State<HomeScreen> {
             appBar: AppBar(
               title: const Text('Room Rental Finder'),
               actions: <Widget>[
-                IconButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('No notifications (mock).')),
-                    );
-                  },
-                  icon: const Icon(Icons.notifications_none),
+                Consumer<NotificationProvider>(
+                  builder:
+                      (
+                        BuildContext context,
+                        NotificationProvider notifProvider,
+                        _,
+                      ) {
+                        final int unread = notifProvider.unreadCount;
+                        return IconButton(
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => const NotificationInboxScreen(),
+                              ),
+                            );
+                          },
+                          icon: Badge(
+                            isLabelVisible: unread > 0,
+                            label: Text(unread.toString()),
+                            child: const Icon(Icons.notifications_none),
+                          ),
+                        );
+                      },
                 ),
               ],
             ),
@@ -82,20 +100,18 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                           AppSpacing.vMd,
-                          const BannerCarousel(imageUrls: AppConstants.bannerImages),
-                          AppSpacing.vLg,
-                          SectionHeader(
-                            title: 'Rooms',
-                            trailing: TextButton(
-                              onPressed: roomProvider.clearFilters,
-                              child: const Text('Clear'),
-                            ),
+                          const BannerCarousel(
+                            imageUrls: AppConstants.bannerImages,
                           ),
+                          AppSpacing.vLg,
+                          const SectionHeader(title: 'Rooms'),
                         ]),
                       ),
                     ),
                     SliverPadding(
-                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.lg,
+                      ),
                       sliver: _buildSliverRoomsContent(roomProvider, rooms),
                     ),
                     const SliverToBoxAdapter(
@@ -111,12 +127,13 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildSliverRoomsContent(RoomProvider roomProvider, List<dynamic> rooms) {
+  Widget _buildSliverRoomsContent(
+    RoomProvider roomProvider,
+    List<dynamic> rooms,
+  ) {
     if (roomProvider.isLoading && rooms.isEmpty) {
       return const SliverToBoxAdapter(
-        child: LoadingPlaceholderList(
-          key: ValueKey<String>('rooms_loading'),
-        ),
+        child: LoadingPlaceholderList(key: ValueKey<String>('rooms_loading')),
       );
     }
 
@@ -152,13 +169,11 @@ class _HomeScreenState extends State<HomeScreen> {
           padding: const EdgeInsets.only(bottom: AppSpacing.md),
           child: RoomCard(
             room: room,
-            onToggleFavorite: () =>
-                roomProvider.toggleFavorite(room.id),
+            onToggleFavorite: () => roomProvider.toggleFavorite(room.id),
             onTap: () {
               Navigator.of(context).push(
                 MaterialPageRoute<void>(
-                  builder: (_) =>
-                      RoomDetailScreen(roomId: room.id),
+                  builder: (_) => RoomDetailScreen(roomId: room.id),
                 ),
               );
             },

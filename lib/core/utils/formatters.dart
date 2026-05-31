@@ -7,7 +7,7 @@ class Formatters {
           : millions.toStringAsFixed(1);
       return '$formatted triệu';
     }
-    
+
     final String digits = value.abs().toString();
     final StringBuffer out = StringBuffer();
     for (int i = 0; i < digits.length; i++) {

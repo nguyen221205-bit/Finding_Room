@@ -1,32 +1,41 @@
 class MessageEntity {
   final String id;
+  final String messageCode;
   final String conversationId;
   final String senderId;
-  final String message;
-  final DateTime createdAt;
+  final String receiverId;
+  final String content;
+  final DateTime timestamp;
   final bool isRead;
 
   const MessageEntity({
     required this.id,
+    required this.messageCode,
     required this.conversationId,
     required this.senderId,
-    required this.message,
-    required this.createdAt,
+    required this.receiverId,
+    required this.content,
+    required this.timestamp,
     required this.isRead,
   });
 
   MessageEntity copyWith({
+    String? messageCode,
+    String? conversationId,
     String? senderId,
-    String? message,
-    DateTime? createdAt,
+    String? receiverId,
+    String? content,
+    DateTime? timestamp,
     bool? isRead,
   }) {
     return MessageEntity(
       id: id,
-      conversationId: conversationId,
+      messageCode: messageCode ?? this.messageCode,
+      conversationId: conversationId ?? this.conversationId,
       senderId: senderId ?? this.senderId,
-      message: message ?? this.message,
-      createdAt: createdAt ?? this.createdAt,
+      receiverId: receiverId ?? this.receiverId,
+      content: content ?? this.content,
+      timestamp: timestamp ?? this.timestamp,
       isRead: isRead ?? this.isRead,
     );
   }

@@ -2,6 +2,7 @@ import 'app_enums.dart';
 
 class LandlordRequestEntity {
   final String id;
+  final String verificationCode;
   final String userId;
   final String fullName;
   final String phoneNumber;
@@ -23,6 +24,7 @@ class LandlordRequestEntity {
 
   const LandlordRequestEntity({
     required this.id,
+    this.verificationCode = '',
     required this.userId,
     required this.fullName,
     required this.phoneNumber,
@@ -43,6 +45,7 @@ class LandlordRequestEntity {
 
   LandlordRequestEntity copyWith({
     String? id,
+    String? verificationCode,
     String? userId,
     String? fullName,
     String? phoneNumber,
@@ -63,6 +66,7 @@ class LandlordRequestEntity {
   }) {
     return LandlordRequestEntity(
       id: id ?? this.id,
+      verificationCode: verificationCode ?? this.verificationCode,
       userId: userId ?? this.userId,
       fullName: fullName ?? this.fullName,
       phoneNumber: phoneNumber ?? this.phoneNumber,

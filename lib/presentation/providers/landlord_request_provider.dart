@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../../data/repositories/local_landlord_request_storage.dart';
+import '../../core/utils/id_generator.dart';
 import '../../domain/entities/app_enums.dart';
 import '../../domain/entities/landlord_request_entity.dart';
 
@@ -90,10 +91,14 @@ class LandlordRequestProvider extends ChangeNotifier {
     final String trimmedIdentityImageUrl = identityImageUrl.trim();
     final String trimmedRequestMessage = requestMessage.trim();
 
-    final String trimmedFrontIdImage = frontIdImage.trim().isEmpty ? trimmedIdentityImageUrl : frontIdImage.trim();
+    final String trimmedFrontIdImage = frontIdImage.trim().isEmpty
+        ? trimmedIdentityImageUrl
+        : frontIdImage.trim();
     final String trimmedBackIdImage = backIdImage.trim();
     final String trimmedSelfieWithIdImage = selfieWithIdImage.trim();
-    final String trimmedPurpose = purpose.trim().isEmpty ? trimmedRequestMessage : purpose.trim();
+    final String trimmedPurpose = purpose.trim().isEmpty
+        ? trimmedRequestMessage
+        : purpose.trim();
 
     final bool isInvalid =
         userId.trim().isEmpty ||
@@ -114,14 +119,18 @@ class LandlordRequestProvider extends ChangeNotifier {
 
     if (existing == null) {
       final LandlordRequestEntity request = LandlordRequestEntity(
-        id: 'lr_${DateTime.now().microsecondsSinceEpoch}',
+        id: IdGenerator.generate('lr'),
         userId: userId.trim(),
         fullName: trimmedFullName,
         phoneNumber: trimmedPhoneNumber,
         identityNumber: trimmedIdentityNumber,
         currentAddress: trimmedCurrentAddress,
-        identityImageUrl: trimmedFrontIdImage.isNotEmpty ? trimmedFrontIdImage : trimmedIdentityImageUrl,
-        requestMessage: trimmedPurpose.isNotEmpty ? trimmedPurpose : trimmedRequestMessage,
+        identityImageUrl: trimmedFrontIdImage.isNotEmpty
+            ? trimmedFrontIdImage
+            : trimmedIdentityImageUrl,
+        requestMessage: trimmedPurpose.isNotEmpty
+            ? trimmedPurpose
+            : trimmedRequestMessage,
         status: LandlordRequestStatus.pending,
         rejectionReason: null,
         createdAt: DateTime.now(),
@@ -132,10 +141,16 @@ class LandlordRequestProvider extends ChangeNotifier {
         taxCode: taxCode?.trim(),
         purpose: trimmedPurpose,
       );
-      _requests.insert(0, request);
-      await _storage.upsertRequest(request);
-      notifyListeners();
-      return true;
+      try {
+        final LandlordRequestEntity savedRequest = await _storage.upsertRequest(
+          request,
+        );
+        _requests.insert(0, savedRequest);
+        notifyListeners();
+        return true;
+      } catch (_) {
+        return false;
+      }
     }
 
     if (existing.status == LandlordRequestStatus.pending ||
@@ -157,8 +172,12 @@ class LandlordRequestProvider extends ChangeNotifier {
       phoneNumber: trimmedPhoneNumber,
       identityNumber: trimmedIdentityNumber,
       currentAddress: trimmedCurrentAddress,
-      identityImageUrl: trimmedFrontIdImage.isNotEmpty ? trimmedFrontIdImage : trimmedIdentityImageUrl,
-      requestMessage: trimmedPurpose.isNotEmpty ? trimmedPurpose : trimmedRequestMessage,
+      identityImageUrl: trimmedFrontIdImage.isNotEmpty
+          ? trimmedFrontIdImage
+          : trimmedIdentityImageUrl,
+      requestMessage: trimmedPurpose.isNotEmpty
+          ? trimmedPurpose
+          : trimmedRequestMessage,
       status: LandlordRequestStatus.pending,
       createdAt: DateTime.now(),
       clearRejectionReason: true,
@@ -169,42 +188,72 @@ class LandlordRequestProvider extends ChangeNotifier {
       taxCode: taxCode?.trim(),
       purpose: trimmedPurpose,
     );
-    _requests[index] = updatedRequest;
-    await _storage.upsertRequest(updatedRequest);
-    notifyListeners();
-    return true;
+    try {
+      final LandlordRequestEntity savedRequest = await _storage.upsertRequest(
+        updatedRequest,
+      );
+      _requests[index] = savedRequest;
+      notifyListeners();
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
-  bool approveRequest(String requestId) {
+  Future<bool> approveRequest(String requestId) async {
     final int index = _requests.indexWhere(
       (LandlordRequestEntity request) => request.id == requestId,
     );
     if (index < 0) return false;
 
-    _requests[index] = _requests[index].copyWith(
+    final LandlordRequestEntity updated = _requests[index].copyWith(
       status: LandlordRequestStatus.approved,
       clearRejectionReason: true,
     );
-    unawaited(_storage.upsertRequest(_requests[index]));
-    notifyListeners();
-    return true;
+    try {
+      final LandlordRequestEntity saved = await _storage.upsertRequest(updated);
+      _requests[index] = saved;
+      notifyListeners();
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
-  bool rejectRequest({required String requestId, required String reason}) {
+  Future<bool> rejectRequest({
+    required String requestId,
+    required String reason,
+  }) async {
     final int index = _requests.indexWhere(
       (LandlordRequestEntity request) => request.id == requestId,
     );
     if (index < 0) return false;
 
     final String trimmedReason = reason.trim();
-    _requests[index] = _requests[index].copyWith(
+    final LandlordRequestEntity updated = _requests[index].copyWith(
       status: LandlordRequestStatus.rejected,
       rejectionReason: trimmedReason.isEmpty
           ? 'Rejected by admin.'
           : trimmedReason,
     );
-    unawaited(_storage.upsertRequest(_requests[index]));
-    notifyListeners();
-    return true;
+    try {
+      final LandlordRequestEntity saved = await _storage.upsertRequest(updated);
+      _requests[index] = saved;
+      notifyListeners();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> revokeVerificationByUserId({
+    required String userId,
+    required String reason,
+  }) async {
+    final LandlordRequestEntity? existing = getUserRequest(userId);
+    if (existing == null) {
+      return true;
+    }
+    return rejectRequest(requestId: existing.id, reason: reason);
   }
 }

@@ -111,8 +111,8 @@ class _SearchScreenState extends State<SearchScreen> {
                       Text(
                         'Chọn tiện ích',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       IconButton(
                         icon: const Icon(Icons.close),
@@ -183,7 +183,7 @@ class _SearchScreenState extends State<SearchScreen> {
                           ),
                         ),
                         AppSpacing.vMd,
-                        
+
                         // District drop down
                         DropdownButtonFormField<String>(
                           initialValue: _district,
@@ -249,16 +249,17 @@ class _SearchScreenState extends State<SearchScreen> {
                           children: <Widget>[
                             Text(
                               'Tiện ích',
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.bold),
                             ),
                             OutlinedButton.icon(
                               onPressed: _showAmenitiesBottomSheet,
                               icon: const Icon(Icons.apps_outlined),
-                              label: Text(_amenities.isEmpty
-                                  ? 'Chọn tiện ích'
-                                  : 'Đã chọn (${_amenities.length})'),
+                              label: Text(
+                                _amenities.isEmpty
+                                    ? 'Chọn tiện ích'
+                                    : 'Đã chọn (${_amenities.length})',
+                              ),
                             ),
                           ],
                         ),
@@ -296,7 +297,9 @@ class _SearchScreenState extends State<SearchScreen> {
                     ),
                   ),
                   SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg,
+                    ),
                     sliver: _buildSliverResults(roomProvider, rooms),
                   ),
                   const SliverToBoxAdapter(
@@ -314,9 +317,7 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget _buildSliverResults(RoomProvider roomProvider, List<dynamic> rooms) {
     if (roomProvider.isLoading && rooms.isEmpty) {
       return const SliverToBoxAdapter(
-        child: LoadingPlaceholderList(
-          key: ValueKey<String>('search_loading'),
-        ),
+        child: LoadingPlaceholderList(key: ValueKey<String>('search_loading')),
       );
     }
 
@@ -339,8 +340,7 @@ class _SearchScreenState extends State<SearchScreen> {
           padding: const EdgeInsets.only(bottom: AppSpacing.md),
           child: RoomCard(
             room: room,
-            onToggleFavorite: () =>
-                roomProvider.toggleFavorite(room.id),
+            onToggleFavorite: () => roomProvider.toggleFavorite(room.id),
             onTap: () {
               Navigator.of(context).push(
                 MaterialPageRoute<void>(

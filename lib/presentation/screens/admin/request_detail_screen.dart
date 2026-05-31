@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../domain/entities/app_enums.dart';
 import '../../../domain/entities/landlord_request_entity.dart';
+import '../../../domain/entities/user_entity.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/landlord_request_provider.dart';
+import '../../providers/notification_provider.dart';
 import '../../widgets/app_dialogs.dart';
 import '../../widgets/app_image.dart';
 import '../../widgets/app_snackbar.dart';
@@ -23,7 +25,11 @@ class RequestDetailScreen extends StatefulWidget {
 class _RequestDetailScreenState extends State<RequestDetailScreen> {
   bool _isProcessing = false;
 
-  void _showFullscreenImage(BuildContext context, String title, String imagePath) {
+  void _showFullscreenImage(
+    BuildContext context,
+    String title,
+    String imagePath,
+  ) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         fullscreenDialog: true,
@@ -35,7 +41,10 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
               iconTheme: const IconThemeData(color: Colors.white),
               title: Text(
                 title,
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             body: Center(
@@ -60,48 +69,12 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
   }
 
   Future<String?> _askRejectReason(BuildContext context) {
-    final TextEditingController reasonController = TextEditingController();
-
-    return showDialog<String>(
+    return AppDialogs.showRejectionDialog(
       context: context,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Row(
-            children: [
-              Icon(Icons.cancel_outlined, color: Colors.red),
-              SizedBox(width: 8),
-              Text('Từ chối yêu cầu'),
-            ],
-          ),
-          content: TextField(
-            controller: reasonController,
-            maxLines: 3,
-            autofocus: true,
-            decoration: const InputDecoration(
-              labelText: 'Lý do từ chối',
-              hintText: 'Nhập lý do chi tiết từ chối yêu cầu này...',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Hủy'),
-            ),
-            FilledButton(
-              onPressed: () {
-                Navigator.of(dialogContext).pop(reasonController.text);
-              },
-              style: FilledButton.styleFrom(
-                backgroundColor: Colors.red,
-              ),
-              child: const Text('Từ chối'),
-            ),
-          ],
-        );
-      },
-    ).whenComplete(reasonController.dispose);
+      title: 'Từ chối yêu cầu',
+      label: 'Lý do từ chối',
+      hint: 'Nhập lý do chi tiết từ chối yêu cầu này...',
+    );
   }
 
   Widget _buildInfoSection({
@@ -143,7 +116,13 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
     );
   }
 
-  Widget _buildInfoItem(BuildContext context, String label, String value, {int maxLines = 1}) {
+  Widget _buildInfoItem(
+    BuildContext context,
+    String label,
+    String value, {
+    int maxLines = 1,
+  }) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
@@ -155,7 +134,7 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
               label,
               style: TextStyle(
                 fontWeight: FontWeight.w500,
-                color: Colors.grey[600],
+                color: theme.hintColor,
                 fontSize: 14,
               ),
             ),
@@ -164,9 +143,9 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
           Expanded(
             child: Text(
               value.isNotEmpty ? value : 'Chưa cung cấp',
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                color: theme.colorScheme.onSurface,
                 fontSize: 14,
               ),
               maxLines: maxLines,
@@ -208,7 +187,10 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
                   right: 0,
                   child: Container(
                     color: Colors.black.withValues(alpha: 0.6),
-                    padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 6),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 4,
+                      horizontal: 6,
+                    ),
                     child: Text(
                       title,
                       style: const TextStyle(
@@ -257,9 +239,7 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
     if (request == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Chi tiết xác thực')),
-        body: const Center(
-          child: Text('Không tìm thấy yêu cầu xác thực.'),
-        ),
+        body: const Center(child: Text('Không tìm thấy yêu cầu xác thực.')),
       );
     }
 
@@ -270,19 +250,19 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
     };
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Kiểm duyệt chủ nhà'),
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text('Kiểm duyệt chủ nhà'), elevation: 0),
       body: SafeArea(
         child: Column(
           children: [
             // Status banner at the top
             Container(
               color: switch (request.status) {
-                LandlordRequestStatus.pending => Colors.orange.shade50,
-                LandlordRequestStatus.approved => Colors.green.shade50,
-                LandlordRequestStatus.rejected => Colors.red.shade50,
+                LandlordRequestStatus.pending =>
+                  theme.colorScheme.tertiaryContainer.withValues(alpha: 0.3),
+                LandlordRequestStatus.approved =>
+                  theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+                LandlordRequestStatus.rejected =>
+                  theme.colorScheme.errorContainer.withValues(alpha: 0.3),
               },
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
@@ -291,11 +271,23 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        Text(
+                          'Mã yêu cầu: ${request.verificationCode}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onSurface,
+                            fontSize: 15,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
                         Row(
                           children: [
-                            const Text(
+                            Text(
                               'Trạng thái hồ sơ: ',
-                              style: TextStyle(fontWeight: FontWeight.w500, color: Colors.black87),
+                              style: TextStyle(
+                                fontWeight: FontWeight.w500,
+                                color: theme.colorScheme.onSurface,
+                              ),
                             ),
                             badge,
                           ],
@@ -305,8 +297,8 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
                           const SizedBox(height: 6),
                           Text(
                             'Lý do từ chối: ${request.rejectionReason}',
-                            style: const TextStyle(
-                              color: Colors.red,
+                            style: TextStyle(
+                              color: theme.colorScheme.error,
                               fontWeight: FontWeight.bold,
                               fontSize: 13,
                             ),
@@ -367,8 +359,35 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
                     title: 'Thông tin cá nhân',
                     icon: Icons.person_outline,
                     children: [
-                      _buildInfoItem(context, 'Họ và tên', request.fullName),
-                      _buildInfoItem(context, 'Số CCCD', request.identityNumber),
+                      FutureBuilder<UserEntity?>(
+                        future: context.read<AuthProvider>().getUserById(
+                          request.userId,
+                        ),
+                        builder: (context, snapshot) {
+                          final user = snapshot.data;
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (user != null && user.userCode.isNotEmpty)
+                                _buildInfoItem(
+                                  context,
+                                  'Mã người dùng',
+                                  user.userCode,
+                                ),
+                              _buildInfoItem(
+                                context,
+                                'Họ và tên',
+                                request.fullName,
+                              ),
+                              _buildInfoItem(
+                                context,
+                                'Số CCCD',
+                                request.identityNumber,
+                              ),
+                            ],
+                          );
+                        },
+                      ),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -379,8 +398,17 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
                     title: 'Thông tin liên hệ',
                     icon: Icons.contact_phone_outlined,
                     children: [
-                      _buildInfoItem(context, 'Số điện thoại', request.phoneNumber),
-                      _buildInfoItem(context, 'Địa chỉ hiện tại', request.currentAddress, maxLines: 3),
+                      _buildInfoItem(
+                        context,
+                        'Số điện thoại',
+                        request.phoneNumber,
+                      ),
+                      _buildInfoItem(
+                        context,
+                        'Địa chỉ hiện tại',
+                        request.currentAddress,
+                        maxLines: 3,
+                      ),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -394,12 +422,16 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
                       _buildInfoItem(
                         context,
                         'Mã số thuế',
-                        request.taxCode != null && request.taxCode!.isNotEmpty ? request.taxCode! : 'Chưa đăng ký MST',
+                        request.taxCode != null && request.taxCode!.isNotEmpty
+                            ? request.taxCode!
+                            : 'Chưa đăng ký MST',
                       ),
                       _buildInfoItem(
                         context,
                         'Mục đích',
-                        request.purpose.isNotEmpty ? request.purpose : request.requestMessage,
+                        request.purpose.isNotEmpty
+                            ? request.purpose
+                            : request.requestMessage,
                         maxLines: 4,
                       ),
                     ],
@@ -414,7 +446,7 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: theme.cardColor,
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.05),
@@ -430,23 +462,40 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
                         onPressed: _isProcessing
                             ? null
                             : () async {
-                                final String? reason = await _askRejectReason(context);
-                                if (reason == null || reason.trim().isEmpty) return;
+                                final messenger = ScaffoldMessenger.of(context);
+                                final navigator = Navigator.of(context);
+                                final ntfProvider = context
+                                    .read<NotificationProvider>();
+
+                                final String? reason = await _askRejectReason(
+                                  context,
+                                );
+                                if (reason == null || reason.trim().isEmpty) {
+                                  return;
+                                }
 
                                 setState(() => _isProcessing = true);
-                                final messenger = ScaffoldMessenger.of(context);
-                                final bool ok = provider.rejectRequest(
+
+                                final bool ok = await provider.rejectRequest(
                                   requestId: request.id,
                                   reason: reason,
                                 );
                                 setState(() => _isProcessing = false);
 
                                 if (ok) {
+                                  await ntfProvider.createNotification(
+                                    userId: request.userId,
+                                    title: 'Yêu cầu làm chủ nhà bị từ chối',
+                                    content:
+                                        'Yêu cầu xác minh chủ nhà của bạn đã bị từ chối. Lý do: $reason',
+                                    type: NotificationType.verificationRejected,
+                                    relatedId: request.id,
+                                  );
                                   AppSnackbar.showWithMessenger(
                                     messenger,
                                     'Đã từ chối yêu cầu xác thực.',
                                   );
-                                  Navigator.of(context).pop();
+                                  navigator.pop();
                                 } else {
                                   AppSnackbar.showWithMessenger(
                                     messenger,
@@ -464,7 +513,10 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
                         ),
                         child: const Text(
                           'Từ chối',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
                       ),
                     ),
@@ -474,23 +526,39 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
                         onPressed: _isProcessing
                             ? null
                             : () async {
-                                final bool confirm = await AppDialogs.confirmApprove(
+                                final messenger = ScaffoldMessenger.of(context);
+                                final navigator = Navigator.of(context);
+                                final ntfProvider = context
+                                    .read<NotificationProvider>();
+
+                                final bool
+                                confirm = await AppDialogs.confirmApprove(
                                   context,
                                   "Yêu cầu làm chủ nhà của ${request.fullName}",
                                 );
                                 if (!confirm) return;
 
                                 setState(() => _isProcessing = true);
-                                final messenger = ScaffoldMessenger.of(context);
-                                final bool ok = provider.approveRequest(request.id);
+
+                                final bool ok = await provider.approveRequest(
+                                  request.id,
+                                );
                                 setState(() => _isProcessing = false);
 
                                 if (ok) {
+                                  await ntfProvider.createNotification(
+                                    userId: request.userId,
+                                    title: 'Yêu cầu làm chủ nhà đã được duyệt',
+                                    content:
+                                        'Chúc mừng! Yêu cầu xác minh chủ nhà của bạn đã được phê duyệt thành công.',
+                                    type: NotificationType.verificationApproved,
+                                    relatedId: request.id,
+                                  );
                                   AppSnackbar.showWithMessenger(
                                     messenger,
                                     'Đã phê duyệt yêu cầu xác thực.',
                                   );
-                                  Navigator.of(context).pop();
+                                  navigator.pop();
                                 } else {
                                   AppSnackbar.showWithMessenger(
                                     messenger,
@@ -516,7 +584,10 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
                               )
                             : const Text(
                                 'Phê duyệt',
-                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
                               ),
                       ),
                     ),

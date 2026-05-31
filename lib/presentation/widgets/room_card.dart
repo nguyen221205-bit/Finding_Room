@@ -35,15 +35,12 @@ class RoomCard extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Hero(
-                  tag: 'room_image_${room.id}',
-                  child: ClipRRect(
-                    borderRadius: AppRadius.mediumAll,
-                    child: SizedBox(
-                      width: 104,
-                      height: 88,
-                      child: AppImage(imagePath: room.primaryImageUrl),
-                    ),
+                ClipRRect(
+                  borderRadius: AppRadius.mediumAll,
+                  child: SizedBox(
+                    width: 104,
+                    height: 88,
+                    child: AppImage(imagePath: room.primaryImageUrl),
                   ),
                 ),
                 AppSpacing.hMd,
@@ -175,9 +172,9 @@ class _AvailabilityPill extends StatelessWidget {
           Text(
             isRented ? 'Đã thuê' : 'Còn trống',
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: isRented ? Colors.red.shade700 : Colors.green.shade700,
-                  fontWeight: FontWeight.bold,
-                ),
+              color: isRented ? Colors.red.shade700 : Colors.green.shade700,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ),

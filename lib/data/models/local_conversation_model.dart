@@ -6,29 +6,39 @@ class LocalConversationModel {
   const LocalConversationModel(this.conversation);
 
   Map<String, dynamic> toMap({
-    required String landlordName,
-    required String landlordAvatarUrl,
+    String? landlordName,
+    String? landlordAvatarUrl,
   }) {
     return <String, dynamic>{
       'id': conversation.id,
+      'conversationCode': conversation.conversationCode,
       'participantIds': conversation.participantIds,
       'roomId': conversation.roomId,
+      'createdAt': conversation.createdAt.toIso8601String(),
+      'updatedAt': conversation.updatedAt.toIso8601String(),
       'lastMessage': conversation.lastMessage,
-      'lastMessageTime': conversation.lastMessageTime.toIso8601String(),
-      'landlordName': landlordName,
-      'landlordAvatarUrl': landlordAvatarUrl,
+      'lastMessageSenderId': conversation.lastMessageSenderId,
+      'unreadCount': conversation.unreadCount,
+      'landlordName': ?landlordName,
+      'landlordAvatarUrl': ?landlordAvatarUrl,
     };
   }
 
   static ConversationEntity fromMap(Map<dynamic, dynamic> map) {
     return ConversationEntity(
       id: map['id'] as String? ?? '',
+      conversationCode: map['conversationCode'] as String? ?? '',
       participantIds: _stringList(map['participantIds']),
       roomId: map['roomId'] as String? ?? '',
+      createdAt:
+          DateTime.tryParse(map['createdAt'] as String? ?? '') ??
+          DateTime.now(),
+      updatedAt:
+          DateTime.tryParse(map['updatedAt'] as String? ?? '') ??
+          DateTime.now(),
       lastMessage: map['lastMessage'] as String? ?? '',
-      lastMessageTime:
-          DateTime.tryParse(map['lastMessageTime'] as String? ?? '') ??
-          DateTime.fromMillisecondsSinceEpoch(0),
+      lastMessageSenderId: map['lastMessageSenderId'] as String? ?? '',
+      unreadCount: map['unreadCount'] as int? ?? 0,
     );
   }
 

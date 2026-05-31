@@ -37,6 +37,17 @@ class AuthProvider extends ChangeNotifier {
 
   bool hasRole(UserRole role) => roles.contains(role);
 
+  Future<UserEntity?> getUserById(String userId) async {
+    return _authRepository.getUserById(userId);
+  }
+
+  Future<bool> isPhoneNumberUnique(
+    String phoneNumber,
+    String currentUserId,
+  ) async {
+    return _authRepository.isPhoneNumberUnique(phoneNumber, currentUserId);
+  }
+
   Future<void> restoreSession() async {
     _isLoading = true;
     notifyListeners();
@@ -196,6 +207,50 @@ class AuthProvider extends ChangeNotifier {
     }
 
     return roles;
+  }
+
+  Future<List<UserEntity>> getAllUsers() async {
+    return _authRepository.getAllUsers();
+  }
+
+  Future<bool> revokeLandlordPrivileges(String landlordId) async {
+    try {
+      final UserEntity? targetUser = await _authRepository.getUserById(
+        landlordId,
+      );
+      if (targetUser == null) return false;
+
+      final List<UserRole> updatedRoles = targetUser.roles
+          .where((UserRole r) => r != UserRole.landlord)
+          .toList();
+
+      await _authRepository.updateRoles(
+        userId: landlordId,
+        roles: updatedRoles,
+      );
+
+      if (targetUser.currentActiveRole == UserRole.landlord) {
+        await _authRepository.updateActiveRole(
+          userId: landlordId,
+          role: UserRole.user,
+        );
+      }
+
+      if (_currentUser != null && _currentUser!.id == landlordId) {
+        _currentUser = _currentUser!.copyWith(
+          roles: updatedRoles,
+          currentActiveRole:
+              _currentUser!.currentActiveRole == UserRole.landlord
+              ? UserRole.user
+              : _currentUser!.currentActiveRole,
+        );
+      }
+
+      notifyListeners();
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<void> _persistCurrentRolesIfNeeded(UserEntity originalUser) async {

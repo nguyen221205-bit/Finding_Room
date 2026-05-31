@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 
 import 'package:path_provider/path_provider.dart';
 
@@ -7,6 +8,10 @@ class LocalImageService {
     required String sourcePath,
     required String folderName,
   }) async {
+    if (kIsWeb) {
+      return sourcePath;
+    }
+
     final File sourceFile = File(sourcePath);
     if (!sourceFile.existsSync()) {
       return sourcePath;

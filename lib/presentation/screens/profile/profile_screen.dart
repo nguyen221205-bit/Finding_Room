@@ -1,5 +1,7 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_spacing.dart';
@@ -13,6 +15,7 @@ import '../admin/admin_dashboard.dart';
 import 'landlord_verification_screen.dart';
 import 'personal_info_screen.dart';
 import 'settings_screen.dart';
+import '../appointment/viewing_appointments_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -25,8 +28,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-    final LandlordRequestProvider requestProvider =
-        context.read<LandlordRequestProvider>();
+    final LandlordRequestProvider requestProvider = context
+        .read<LandlordRequestProvider>();
     Future<void>.microtask(() => requestProvider.loadRequestsIfNeeded());
   }
 
@@ -41,9 +44,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _showRoleSwitchSheet(BuildContext context) {
     final AuthProvider auth = context.read<AuthProvider>();
     final RoleProvider roleProvider = context.read<RoleProvider>();
-    final LandlordRequestProvider requestProvider = context.read<LandlordRequestProvider>();
-    
-    final request = auth.userId.isEmpty ? null : requestProvider.getUserRequest(auth.userId);
+    final LandlordRequestProvider requestProvider = context
+        .read<LandlordRequestProvider>();
+
+    final request = auth.userId.isEmpty
+        ? null
+        : requestProvider.getUserRequest(auth.userId);
     final ActiveUserMode activeMode = roleProvider.activeMode;
 
     showModalBottomSheet<void>(
@@ -73,15 +79,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 20),
                 Text(
                   'Chuyển đổi vai trò',
-                  style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Chọn vai trò phù hợp với nhu cầu của bạn',
-                  style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: Colors.grey[600],
+                  ),
                 ),
                 const SizedBox(height: 20),
-                
+
                 // Renter (Người thuê trọ)
                 _buildRoleOption(
                   context: context,
@@ -93,11 +103,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     roleProvider.switchActiveMode(ActiveUserMode.renter);
                     auth.updateActiveRole(UserRole.user);
                     Navigator.pop(context);
-                    AppSnackbar.success(context, 'Đã chuyển sang vai trò Người thuê trọ');
+                    AppSnackbar.success(
+                      context,
+                      'Đã chuyển sang vai trò Người thuê trọ',
+                    );
                   },
                 ),
                 const SizedBox(height: 12),
-                
+
                 // Landlord (Chủ nhà trọ)
                 _buildRoleOption(
                   context: context,
@@ -107,14 +120,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   isActive: activeMode == ActiveUserMode.landlord,
                   onTap: () {
                     // Admin inherently has landlord privileges, otherwise check hasRole
-                    final bool hasLandlordRole = auth.hasRole(UserRole.landlord) || auth.hasRole(UserRole.admin);
-                    
+                    final bool hasLandlordRole =
+                        auth.hasRole(UserRole.landlord) ||
+                        auth.hasRole(UserRole.admin);
+
                     if (hasLandlordRole) {
                       // CASE 1: Switch immediately
                       roleProvider.switchActiveMode(ActiveUserMode.landlord);
                       auth.updateActiveRole(UserRole.landlord);
                       Navigator.pop(context);
-                      AppSnackbar.success(context, 'Đã chuyển sang vai trò Chủ nhà trọ');
+                      AppSnackbar.success(
+                        context,
+                        'Đã chuyển sang vai trò Chủ nhà trọ',
+                      );
                     } else if (request == null) {
                       // CASE 2: Not created, go to verification
                       Navigator.pop(context);
@@ -123,11 +141,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           builder: (_) => const LandlordVerificationScreen(),
                         ),
                       );
-                    } else if (request.status == LandlordRequestStatus.pending) {
+                    } else if (request.status ==
+                        LandlordRequestStatus.pending) {
                       // CASE 3: Pending state
                       Navigator.pop(context);
                       _showPendingDialog(context);
-                    } else if (request.status == LandlordRequestStatus.rejected) {
+                    } else if (request.status ==
+                        LandlordRequestStatus.rejected) {
                       // CASE 4: Rejected state, let them resubmit
                       Navigator.pop(context);
                       _showRejectedDialog(context, request.rejectionReason);
@@ -137,7 +157,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       roleProvider.switchActiveMode(ActiveUserMode.landlord);
                       auth.updateActiveRole(UserRole.landlord);
                       Navigator.pop(context);
-                      AppSnackbar.success(context, 'Đã chuyển sang vai trò Chủ nhà trọ');
+                      AppSnackbar.success(
+                        context,
+                        'Đã chuyển sang vai trò Chủ nhà trọ',
+                      );
                     }
                   },
                 ),
@@ -166,18 +189,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isActive ? theme.colorScheme.primary : Colors.grey[300]!,
+            color: isActive ? theme.colorScheme.primary : theme.dividerColor,
             width: isActive ? 2 : 1,
           ),
-          color: isActive ? theme.colorScheme.primaryContainer.withValues(alpha: 0.1) : Colors.transparent,
+          color: isActive
+              ? theme.colorScheme.primaryContainer.withValues(alpha: 0.1)
+              : Colors.transparent,
         ),
         child: Row(
           children: <Widget>[
             CircleAvatar(
-              backgroundColor: isActive ? theme.colorScheme.primary : Colors.grey[100],
+              backgroundColor: isActive
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.surfaceContainerHighest,
               child: Icon(
                 icon,
-                color: isActive ? Colors.white : Colors.grey[600],
+                color: isActive ? Colors.white : theme.hintColor,
               ),
             ),
             const SizedBox(width: 16),
@@ -189,22 +216,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     title,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: isActive ? theme.colorScheme.primary : Colors.black87,
+                      color: isActive
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.hintColor,
+                    ),
                   ),
                 ],
               ),
             ),
             if (isActive)
-              Icon(
-                Icons.check_circle,
-                color: theme.colorScheme.primary,
-              ),
+              Icon(Icons.check_circle, color: theme.colorScheme.primary),
           ],
         ),
       ),
@@ -274,7 +302,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildRoleSwitchCard(BuildContext context, ActiveUserMode activeMode, bool isAdmin) {
+  Widget _buildRoleSwitchCard(
+    BuildContext context,
+    ActiveUserMode activeMode,
+    bool isAdmin,
+  ) {
     final theme = Theme.of(context);
     String roleName = '';
     IconData icon = Icons.person;
@@ -292,7 +324,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       color: theme.colorScheme.primaryContainer.withValues(alpha: 0.12),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: theme.colorScheme.primary.withValues(alpha: 0.15)),
+        side: BorderSide(
+          color: theme.colorScheme.primary.withValues(alpha: 0.15),
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -300,10 +334,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: <Widget>[
             CircleAvatar(
               backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
-              child: Icon(
-                icon,
-                color: theme.colorScheme.primary,
-              ),
+              child: Icon(icon, color: theme.colorScheme.primary),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -312,7 +343,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: <Widget>[
                   const Text(
                     'Chế độ xem hoạt động',
-                    style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w500),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -329,7 +364,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               onPressed: () => _showRoleSwitchSheet(context),
               style: ElevatedButton.styleFrom(
                 elevation: 0,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -345,7 +383,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildRoleBadge(BuildContext context, ActiveUserMode activeMode, bool isAdmin) {
+  Widget _buildRoleBadge(
+    BuildContext context,
+    ActiveUserMode activeMode,
+    bool isAdmin,
+  ) {
     String label = '';
     Color color = Colors.grey;
     IconData icon = Icons.person;
@@ -385,6 +427,297 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  String _getAccountCreatedDate(String userId) {
+    try {
+      if (userId.startsWith('u_admin_')) return '24/05/2026';
+      if (userId.startsWith('u_landlord_')) return '24/05/2026';
+      if (userId.startsWith('u_user_1')) return '25/05/2026';
+      if (userId.startsWith('u_user_3')) return '25/05/2026';
+
+      final List<String> parts = userId.split('_');
+      if (parts.length >= 3) {
+        final String tsStr = parts[1];
+        final int? ts = int.tryParse(tsStr);
+        if (ts != null) {
+          final DateTime date = DateTime.fromMillisecondsSinceEpoch(ts);
+          return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+        }
+      }
+      if (parts.length >= 2) {
+        final String tsStr = parts[parts.length - 1];
+        final int? ts = int.tryParse(tsStr);
+        if (ts != null) {
+          final DateTime date = DateTime.fromMicrosecondsSinceEpoch(ts);
+          return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+        }
+      }
+    } catch (_) {}
+    return '25/05/2026';
+  }
+
+  Widget _buildIdentityCard(BuildContext context, AuthProvider auth) {
+    final theme = Theme.of(context);
+    final LandlordRequestProvider requestProvider = context
+        .watch<LandlordRequestProvider>();
+    final request = auth.userId.isEmpty
+        ? null
+        : requestProvider.getUserRequest(auth.userId);
+
+    // Determine verification status
+    String statusText = 'Chưa xác thực';
+    Color statusColor = Colors.grey;
+    IconData statusIcon = Icons.help_outline;
+    bool showVerifyBtn = true;
+
+    if (auth.hasRole(UserRole.admin)) {
+      statusText = 'Đã xác thực (Admin)';
+      statusColor = Colors.purple;
+      statusIcon = Icons.verified_user;
+      showVerifyBtn = false;
+    } else if (request == null) {
+      if (auth.hasRole(UserRole.landlord)) {
+        statusText = 'Đã xác thực';
+        statusColor = Colors.green;
+        statusIcon = Icons.verified;
+        showVerifyBtn = false;
+      } else {
+        statusText = 'Chưa xác thực';
+        statusColor = Colors.grey;
+        statusIcon = Icons.info_outline;
+        showVerifyBtn = true;
+      }
+    } else {
+      switch (request.status) {
+        case LandlordRequestStatus.pending:
+          statusText = 'Đang chờ duyệt';
+          statusColor = Colors.orange;
+          statusIcon = Icons.hourglass_empty;
+          showVerifyBtn = false;
+          break;
+        case LandlordRequestStatus.approved:
+          statusText = 'Đã xác thực';
+          statusColor = Colors.green;
+          statusIcon = Icons.verified;
+          showVerifyBtn = false;
+          break;
+        case LandlordRequestStatus.rejected:
+          statusText = 'Bị từ chối';
+          statusColor = Colors.red;
+          statusIcon = Icons.cancel_outlined;
+          showVerifyBtn = true;
+          break;
+      }
+    }
+
+    final createdDate = _getAccountCreatedDate(auth.userId);
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: theme.dividerColor),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.shield_outlined,
+                  color: theme.colorScheme.primary,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'Thông tin tài khoản & Định danh',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            const Divider(height: 24, thickness: 0.8),
+
+            // User Code
+            if (auth.hasRole(UserRole.admin) &&
+                auth.currentUser != null &&
+                auth.currentUser!.userCode.isNotEmpty) ...[
+              _buildIdentityRow(
+                context,
+                label: 'Mã người dùng',
+                value: auth.currentUser!.userCode,
+                trailing: IconButton(
+                  icon: const Icon(Icons.copy, size: 16, color: Colors.blue),
+                  constraints: const BoxConstraints(),
+                  padding: EdgeInsets.zero,
+                  tooltip: 'Sao chép mã người dùng',
+                  onPressed: () {
+                    Clipboard.setData(
+                      ClipboardData(text: auth.currentUser!.userCode),
+                    );
+                    AppSnackbar.success(
+                      context,
+                      'Đã sao chép mã người dùng vào bộ nhớ tạm!',
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+
+            // UID
+            _buildIdentityRow(
+              context,
+              label: 'Mã định danh (UID)',
+              value: auth.userId,
+              trailing: IconButton(
+                icon: const Icon(Icons.copy, size: 16, color: Colors.blue),
+                constraints: const BoxConstraints(),
+                padding: EdgeInsets.zero,
+                tooltip: 'Sao chép UID',
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: auth.userId));
+                  AppSnackbar.success(
+                    context,
+                    'Đã sao chép mã định danh vào bộ nhớ tạm!',
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Email
+            _buildIdentityRow(
+              context,
+              label: 'Email tài khoản',
+              value: auth.email.isEmpty ? 'Chưa thiết lập' : auth.email,
+            ),
+            const SizedBox(height: 12),
+
+            // Created At
+            _buildIdentityRow(
+              context,
+              label: 'Ngày tham gia',
+              value: createdDate,
+            ),
+            const SizedBox(height: 12),
+
+            // Landlord Verification Status
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: Text(
+                    'Xác minh Chủ trọ',
+                    style: TextStyle(color: theme.hintColor, fontSize: 13),
+                  ),
+                ),
+                Expanded(
+                  flex: 5,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: statusColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: statusColor.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(statusIcon, size: 14, color: statusColor),
+                            const SizedBox(width: 4),
+                            Text(
+                              statusText,
+                              style: TextStyle(
+                                color: statusColor,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (showVerifyBtn) ...[
+                        const SizedBox(height: 8),
+                        InkWell(
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) =>
+                                    const LandlordVerificationScreen(),
+                              ),
+                            );
+                          },
+                          child: Text(
+                            request?.status == LandlordRequestStatus.rejected
+                                ? 'Gửi lại yêu cầu xác minh →'
+                                : 'Yêu cầu xác minh ngay →',
+                            style: const TextStyle(
+                              color: Colors.blue,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIdentityRow(
+    BuildContext context, {
+    required String label,
+    required String value,
+    Widget? trailing,
+  }) {
+    return Row(
+      children: [
+        Expanded(
+          flex: 3,
+          child: Text(
+            label,
+            style: TextStyle(color: Theme.of(context).hintColor, fontSize: 13),
+          ),
+        ),
+        Expanded(
+          flex: 5,
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  value,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13.5,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (trailing != null) ...[const SizedBox(width: 8), trailing],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final AuthProvider auth = context.watch<AuthProvider>();
@@ -392,16 +725,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final user = auth.currentUser;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Tài khoản'),
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text('Tài khoản'), elevation: 0),
       body: SafeArea(
         child: ListView(
           padding: AppSpacing.paddingAllLg,
           children: <Widget>[
             // 1. Role switching card at the very top
-            _buildRoleSwitchCard(context, roleProvider.activeMode, roleProvider.isAdmin),
+            _buildRoleSwitchCard(
+              context,
+              roleProvider.activeMode,
+              roleProvider.isAdmin,
+            ),
             const SizedBox(height: 24),
 
             // 2. Profile Header section
@@ -410,48 +744,70 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: <Widget>[
                   CircleAvatar(
                     radius: 48,
-                    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                    backgroundImage: user?.avatarPath != null && user!.avatarPath!.isNotEmpty
-                        ? FileImage(File(user.avatarPath!))
-                        : null,
+                    backgroundColor: Theme.of(
+                      context,
+                    ).colorScheme.primaryContainer,
+                    backgroundImage: () {
+                      final String? path = user?.avatarPath;
+                      if (path == null || path.isEmpty) return null;
+                      if (path.startsWith('http')) {
+                        return NetworkImage(path) as ImageProvider;
+                      }
+                      if (path.startsWith('assets/')) {
+                        return AssetImage(path) as ImageProvider;
+                      }
+                      if (!kIsWeb) {
+                        return FileImage(File(path)) as ImageProvider;
+                      }
+                      return null;
+                    }(),
                     child: user?.avatarPath == null || user!.avatarPath!.isEmpty
                         ? Text(
-                            auth.username.isNotEmpty ? auth.username[0].toUpperCase() : 'U',
-                            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                              color: Theme.of(context).colorScheme.onPrimaryContainer,
-                            ),
+                            auth.username.isNotEmpty
+                                ? auth.username[0].toUpperCase()
+                                : 'U',
+                            style: Theme.of(context).textTheme.headlineLarge
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onPrimaryContainer,
+                                ),
                           )
                         : null,
                   ),
                   const SizedBox(height: 12),
                   Text(
                     auth.username,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  _buildRoleBadge(context, roleProvider.activeMode, roleProvider.isAdmin),
-                  const SizedBox(height: 16),
-                  OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const PersonalInfoScreen(),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.edit_outlined, size: 16),
-                    label: const Text('Chỉnh sửa thông tin'),
-                    style: OutlinedButton.styleFrom(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
                     ),
+                  ),
+                  if (auth.hasRole(UserRole.admin) &&
+                      user != null &&
+                      user.userCode.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      user.userCode,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 8),
+                  _buildRoleBadge(
+                    context,
+                    roleProvider.activeMode,
+                    roleProvider.isAdmin,
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 28),
+
+            // 2.5 Identity & Verification Card
+            _buildIdentityCard(context, auth),
+            const SizedBox(height: 24),
 
             // 3. Operations Menu List
             Card(
@@ -476,6 +832,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   const Divider(height: 1),
                   ListTile(
+                    leading: const Icon(
+                      Icons.calendar_month_outlined,
+                      color: Colors.orange,
+                    ),
+                    title: const Text('Lịch xem phòng'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const ViewingAppointmentsScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
                     leading: const Icon(Icons.settings_outlined),
                     title: const Text('Thiết lập'),
                     trailing: const Icon(Icons.chevron_right),
@@ -490,7 +862,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   if (auth.hasRole(UserRole.admin)) ...<Widget>[
                     const Divider(height: 1),
                     ListTile(
-                      leading: const Icon(Icons.admin_panel_settings_outlined, color: Colors.purple),
+                      leading: const Icon(
+                        Icons.admin_panel_settings_outlined,
+                        color: Colors.purple,
+                      ),
                       title: const Text(
                         'Quản trị hệ thống',
                         style: TextStyle(fontWeight: FontWeight.bold),
@@ -527,4 +902,3 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 }
-

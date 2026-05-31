@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -29,8 +30,14 @@ class AppImage extends StatelessWidget {
     }
 
     final double devicePixelRatio = MediaQuery.of(context).devicePixelRatio;
-    final int? targetCacheWidth = width != null ? (width! * devicePixelRatio).round() : null;
-    final int? targetCacheHeight = height != null ? (height! * devicePixelRatio).round() : null;
+    final double? w = width;
+    final double? h = height;
+    final int? targetCacheWidth = w != null && w.isFinite
+        ? (w * devicePixelRatio).round()
+        : null;
+    final int? targetCacheHeight = h != null && h.isFinite
+        ? (h * devicePixelRatio).round()
+        : null;
 
     if (ImageUtils.isNetworkImage(imagePath)) {
       return CachedNetworkImage(
@@ -46,6 +53,20 @@ class AppImage extends StatelessWidget {
       );
     }
 
+    if (kIsWeb) {
+      if (imagePath.startsWith('assets/')) {
+        return Image.asset(
+          imagePath,
+          fit: fit,
+          width: width,
+          height: height,
+          errorBuilder: (_, _, _) =>
+              const _Placeholder(icon: Icons.image_not_supported_outlined),
+        );
+      }
+      return const _Placeholder(icon: Icons.image_not_supported_outlined);
+    }
+
     final File file = File(imagePath);
     if (!file.existsSync()) {
       return const _Placeholder(icon: Icons.image_not_supported_outlined);
@@ -56,7 +77,9 @@ class AppImage extends StatelessWidget {
       fit: fit,
       width: width,
       height: height,
-      cacheWidth: targetCacheWidth ?? 600, // Safe default to prevent decoding massive photos at full resolution
+      cacheWidth:
+          targetCacheWidth ??
+          600, // Safe default to prevent decoding massive photos at full resolution
       cacheHeight: targetCacheHeight,
       errorBuilder: (_, _, _) =>
           const _Placeholder(icon: Icons.image_not_supported_outlined),
@@ -71,12 +94,11 @@ class _Placeholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      height: double.infinity,
-      color: AppColors.shimmer,
-      alignment: Alignment.center,
-      child: Icon(icon, color: AppColors.textHint),
+    return SizedBox.expand(
+      child: ColoredBox(
+        color: AppColors.shimmer,
+        child: Center(child: Icon(icon, color: AppColors.textHint)),
+      ),
     );
   }
 }

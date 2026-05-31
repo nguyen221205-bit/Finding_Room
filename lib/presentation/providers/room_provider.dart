@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../data/models/room_model.dart';
 import '../../data/repositories/local_room_storage.dart';
+import '../../core/utils/id_generator.dart';
 import '../../domain/entities/app_enums.dart';
 import '../../data/repositories/room_repository.dart';
 import '../../domain/entities/room_entity.dart';
@@ -122,7 +123,7 @@ class RoomProvider extends ChangeNotifier {
         .toList(growable: false);
   }
 
-  void addRoom({
+  Future<bool> addRoom({
     required String ownerId,
     required String landlordName,
     required String landlordPhone,
@@ -136,9 +137,16 @@ class RoomProvider extends ChangeNotifier {
     required int capacity,
     required String furniture,
     List<String>? imageUrls,
-  }) {
+    double? usableArea,
+    double? length,
+    double? width,
+    String? district,
+    double? latitude,
+    double? longitude,
+    RoomAvailability availability = RoomAvailability.available,
+  }) async {
     final RoomModel room = RoomModel(
-      id: 'r_${DateTime.now().microsecondsSinceEpoch}',
+      id: IdGenerator.generate('r'),
       title: title.trim(),
       price: price,
       address: address.trim(),
@@ -154,69 +162,191 @@ class RoomProvider extends ChangeNotifier {
       ownerId: ownerId,
       status: RoomStatus.pending,
       rejectionReason: null,
+      availability: availability,
       capacity: capacity,
       furniture: furniture.trim(),
       landlordName: landlordName,
       landlordPhone: landlordPhone,
       landlordAvatarUrl: landlordAvatarUrl,
+      usableArea: usableArea,
+      length: length,
+      width: width,
+      district: district,
+      latitude: latitude,
+      longitude: longitude,
     );
 
-    _rooms.insert(0, room);
-    _persistRoom(room);
-    _recomputeFiltered();
-    notifyListeners();
+    try {
+      final RoomEntity? savedRoom = await _persistRoom(room);
+      if (savedRoom != null) {
+        _rooms.insert(0, RoomModel.fromEntity(savedRoom));
+        _recomputeFiltered();
+        notifyListeners();
+        return true;
+      }
+      return false;
+    } catch (_) {
+      return false;
+    }
   }
 
-  void updateRoom(RoomEntity room) {
+  Future<bool> updateRoom(RoomEntity room) async {
     final int index = _rooms.indexWhere((RoomModel item) => item.id == room.id);
-    if (index < 0) return;
+    if (index < 0) return false;
 
     final RoomModel model = RoomModel.fromEntity(room);
-    _rooms[index] = model;
-    _persistRoom(model);
-    _recomputeFiltered();
-    notifyListeners();
+    try {
+      final RoomEntity? savedRoom = await _persistRoom(model);
+      if (savedRoom != null) {
+        _rooms[index] = RoomModel.fromEntity(savedRoom);
+        _recomputeFiltered();
+        notifyListeners();
+        return true;
+      }
+      return false;
+    } catch (_) {
+      return false;
+    }
   }
 
-  void deleteRoom(String roomId) {
-    final int index = _rooms.indexWhere((RoomModel room) => room.id == roomId);
-    if (index < 0) return;
-
-    _rooms.removeAt(index);
-    _deletePersistedRoom(roomId);
-    _recomputeFiltered();
-    notifyListeners();
-  }
-
-  bool approveRoom(String roomId) {
+  Future<bool> deleteRoom(String roomId) async {
     final int index = _rooms.indexWhere((RoomModel room) => room.id == roomId);
     if (index < 0) return false;
 
-    _rooms[index] = _rooms[index].copyWithModel(
+    try {
+      await _deletePersistedRoom(roomId);
+      _rooms.removeAt(index);
+      _recomputeFiltered();
+      notifyListeners();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> approveRoom(String roomId) async {
+    final int index = _rooms.indexWhere((RoomModel room) => room.id == roomId);
+    if (index < 0) return false;
+
+    final RoomModel updated = _rooms[index].copyWithModel(
       status: RoomStatus.approved,
       clearRejectionReason: true,
     );
-    _persistRoom(_rooms[index]);
-    _recomputeFiltered();
-    notifyListeners();
-    return true;
+    try {
+      final RoomEntity? savedRoom = await _persistRoom(updated);
+      if (savedRoom != null) {
+        _rooms[index] = RoomModel.fromEntity(savedRoom);
+        _recomputeFiltered();
+        notifyListeners();
+        return true;
+      }
+      return false;
+    } catch (_) {
+      return false;
+    }
   }
 
-  bool rejectRoom({required String roomId, required String reason}) {
+  Future<bool> rejectRoom({
+    required String roomId,
+    required String reason,
+  }) async {
     final int index = _rooms.indexWhere((RoomModel room) => room.id == roomId);
     if (index < 0) return false;
 
     final String trimmedReason = reason.trim();
-    _rooms[index] = _rooms[index].copyWithModel(
+    final RoomModel updated = _rooms[index].copyWithModel(
       status: RoomStatus.rejected,
       rejectionReason: trimmedReason.isEmpty
           ? 'Rejected by admin.'
           : trimmedReason,
     );
-    _persistRoom(_rooms[index]);
+    try {
+      final RoomEntity? savedRoom = await _persistRoom(updated);
+      if (savedRoom != null) {
+        _rooms[index] = RoomModel.fromEntity(savedRoom);
+        _recomputeFiltered();
+        notifyListeners();
+        return true;
+      }
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> hideRoomByAdmin({
+    required String roomId,
+    required String reason,
+  }) async {
+    final int index = _rooms.indexWhere((RoomModel room) => room.id == roomId);
+    if (index < 0) return false;
+
+    final String trimmedReason = reason.trim();
+    final RoomModel updated = _rooms[index].copyWithModel(
+      status: RoomStatus.hiddenByAdmin,
+      rejectionReason: trimmedReason.isEmpty
+          ? 'Bị ẩn bởi Admin.'
+          : trimmedReason,
+    );
+    try {
+      final RoomEntity? savedRoom = await _persistRoom(updated);
+      if (savedRoom != null) {
+        _rooms[index] = RoomModel.fromEntity(savedRoom);
+        _recomputeFiltered();
+        notifyListeners();
+        return true;
+      }
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> restoreRoomByAdmin({required String roomId}) async {
+    final int index = _rooms.indexWhere((RoomModel room) => room.id == roomId);
+    if (index < 0) return false;
+
+    final RoomModel updated = _rooms[index].copyWithModel(
+      status: RoomStatus.approved,
+      clearRejectionReason: true,
+    );
+    try {
+      final RoomEntity? savedRoom = await _persistRoom(updated);
+      if (savedRoom != null) {
+        _rooms[index] = RoomModel.fromEntity(savedRoom);
+        _recomputeFiltered();
+        notifyListeners();
+        return true;
+      }
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> hideAllRoomsForOwner({
+    required String ownerId,
+    required String reason,
+  }) async {
+    final String trimmedReason = reason.trim();
+    for (int i = 0; i < _rooms.length; i++) {
+      if (_rooms[i].ownerId == ownerId) {
+        final RoomModel updated = _rooms[i].copyWithModel(
+          status: RoomStatus.hiddenByAdmin,
+          rejectionReason: trimmedReason.isEmpty
+              ? 'Tự động ẩn do thu hồi quyền chủ nhà.'
+              : 'Tự động ẩn do thu hồi quyền chủ nhà: $trimmedReason',
+        );
+        try {
+          final RoomEntity? savedRoom = await _persistRoom(updated);
+          if (savedRoom != null) {
+            _rooms[i] = RoomModel.fromEntity(savedRoom);
+          }
+        } catch (_) {}
+      }
+    }
     _recomputeFiltered();
     notifyListeners();
-    return true;
   }
 
   void setSearchQuery(String value) {
@@ -276,37 +406,58 @@ class RoomProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void toggleFavorite(String roomId) {
+  Future<void> toggleFavorite(String roomId) async {
     final int index = _rooms.indexWhere((RoomModel r) => r.id == roomId);
     if (index < 0) return;
     final RoomModel current = _rooms[index];
-    _rooms[index] = current.copyWithModel(isFavorite: !current.isFavorite);
-    _persistRoom(_rooms[index]);
-    _recomputeFiltered();
-    notifyListeners();
+    final RoomModel updated = current.copyWithModel(
+      isFavorite: !current.isFavorite,
+    );
+    try {
+      final RoomEntity? savedRoom = await _persistRoom(updated);
+      if (savedRoom != null) {
+        _rooms[index] = RoomModel.fromEntity(savedRoom);
+        _recomputeFiltered();
+        notifyListeners();
+      }
+    } catch (_) {}
   }
 
-  bool updateAvailability(String roomId, RoomAvailability availability) {
+  Future<bool> updateAvailability(
+    String roomId,
+    RoomAvailability availability,
+  ) async {
     final int index = _rooms.indexWhere((RoomModel r) => r.id == roomId);
     if (index < 0) return false;
-    _rooms[index] = _rooms[index].copyWithModel(availability: availability);
-    _persistRoom(_rooms[index]);
-    _recomputeFiltered();
-    notifyListeners();
-    return true;
-  }
-
-  void _persistRoom(RoomEntity room) {
-    final RoomRepository repository = _roomRepository;
-    if (repository is LocalRoomStorage) {
-      unawaited(repository.upsertRoom(room));
+    final RoomModel updated = _rooms[index].copyWithModel(
+      availability: availability,
+    );
+    try {
+      final RoomEntity? savedRoom = await _persistRoom(updated);
+      if (savedRoom != null) {
+        _rooms[index] = RoomModel.fromEntity(savedRoom);
+        _recomputeFiltered();
+        notifyListeners();
+        return true;
+      }
+      return false;
+    } catch (_) {
+      return false;
     }
   }
 
-  void _deletePersistedRoom(String roomId) {
+  Future<RoomEntity?> _persistRoom(RoomEntity room) async {
     final RoomRepository repository = _roomRepository;
     if (repository is LocalRoomStorage) {
-      unawaited(repository.deleteRoom(roomId));
+      return await repository.upsertRoom(room);
+    }
+    return room;
+  }
+
+  Future<void> _deletePersistedRoom(String roomId) async {
+    final RoomRepository repository = _roomRepository;
+    if (repository is LocalRoomStorage) {
+      await repository.deleteRoom(roomId);
     }
   }
 
@@ -324,7 +475,8 @@ class RoomProvider extends ChangeNotifier {
 
       bool matchesDistrict = true;
       if (dist != null && dist != 'Tất cả') {
-        matchesDistrict = room.address.toLowerCase().contains(dist.toLowerCase()) ||
+        matchesDistrict =
+            room.address.toLowerCase().contains(dist.toLowerCase()) ||
             room.title.toLowerCase().contains(dist.toLowerCase());
       }
 
@@ -345,14 +497,21 @@ class RoomProvider extends ChangeNotifier {
           ? true
           : requiredAmenities.every((String a) => room.amenities.contains(a));
 
-      return matchesQuery && matchesDistrict && matchesPrice && matchesAmenities;
+      return matchesQuery &&
+          matchesDistrict &&
+          matchesPrice &&
+          matchesAmenities;
     }).toList();
 
     // Sorting
     if (_filters.sortBy == 'Giá tăng dần') {
-      _filteredRooms.sort((RoomEntity a, RoomEntity b) => a.price.compareTo(b.price));
+      _filteredRooms.sort(
+        (RoomEntity a, RoomEntity b) => a.price.compareTo(b.price),
+      );
     } else if (_filters.sortBy == 'Giá giảm dần') {
-      _filteredRooms.sort((RoomEntity a, RoomEntity b) => b.price.compareTo(a.price));
+      _filteredRooms.sort(
+        (RoomEntity a, RoomEntity b) => b.price.compareTo(a.price),
+      );
     } else {
       // Mới nhất (mặc định)
       _filteredRooms.sort((RoomEntity a, RoomEntity b) => b.id.compareTo(a.id));

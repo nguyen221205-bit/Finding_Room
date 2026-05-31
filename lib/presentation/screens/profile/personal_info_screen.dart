@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
@@ -54,9 +55,19 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
       );
       if (image == null) return;
 
+      if (kIsWeb) {
+        setState(() {
+          _avatarPath = image.path;
+        });
+        return;
+      }
+
       final Directory appDir = await getApplicationDocumentsDirectory();
-      final String extension = image.path.contains('.') ? image.path.split('.').last : 'png';
-      final String fileName = 'avatar_${DateTime.now().millisecondsSinceEpoch}.$extension';
+      final String extension = image.path.contains('.')
+          ? image.path.split('.').last
+          : 'png';
+      final String fileName =
+          'avatar_${DateTime.now().millisecondsSinceEpoch}.$extension';
       final String localPath = '${appDir.path}/$fileName';
 
       final File savedFile = await File(image.path).copy(localPath);
@@ -73,16 +84,42 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
   Future<void> _saveChanges() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final AuthProvider auth = context.read<AuthProvider>();
+    final String currentUserId = auth.userId;
+    final String trimmedPhone = _phoneController.text.trim();
+
+    if (trimmedPhone.isNotEmpty) {
+      // Format validation: starts with 03/05/07/08/09, only digits, exactly 10 digits
+      final RegExp phoneRegex = RegExp(r'^(03|05|07|08|09)[0-9]{8}$');
+      if (!phoneRegex.hasMatch(trimmedPhone)) {
+        AppSnackbar.error(context, 'Số điện thoại không hợp lệ.');
+        return;
+      }
+
+      // Unique validation
+      final bool isUnique = await auth.isPhoneNumberUnique(
+        trimmedPhone,
+        currentUserId,
+      );
+      if (!mounted) return;
+      if (!isUnique) {
+        AppSnackbar.error(
+          context,
+          'Số điện thoại này đã được sử dụng bởi tài khoản khác.',
+        );
+        return;
+      }
+    }
+
     setState(() {
       _isSaving = true;
     });
 
     try {
-      final AuthProvider auth = context.read<AuthProvider>();
       await auth.updateProfile(
         username: _nameController.text.trim(),
         avatarPath: _avatarPath,
-        phoneNumber: _phoneController.text.trim(),
+        phoneNumber: trimmedPhone,
         zaloNumber: _zaloController.text.trim(),
         bio: _bioController.text.trim(),
       );
@@ -110,10 +147,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Chỉnh sửa thông tin'),
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text('Chỉnh sửa thông tin'), elevation: 0),
       body: SafeArea(
         child: _isSaving
             ? const Center(child: CircularProgressIndicator())
@@ -130,17 +164,31 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                           CircleAvatar(
                             radius: 56,
                             backgroundColor: theme.colorScheme.primaryContainer,
-                            backgroundImage: _avatarPath != null && _avatarPath!.isNotEmpty
-                                ? FileImage(File(_avatarPath!))
-                                : null,
+                            backgroundImage: () {
+                              final String? path = _avatarPath;
+                              if (path == null || path.isEmpty) return null;
+                              if (path.startsWith('http')) {
+                                return NetworkImage(path) as ImageProvider;
+                              }
+                              if (path.startsWith('assets/')) {
+                                return AssetImage(path) as ImageProvider;
+                              }
+                              if (!kIsWeb) {
+                                return FileImage(File(path)) as ImageProvider;
+                              }
+                              return null;
+                            }(),
                             child: _avatarPath == null || _avatarPath!.isEmpty
                                 ? Text(
                                     _nameController.text.isNotEmpty
                                         ? _nameController.text[0].toUpperCase()
                                         : 'U',
-                                    style: theme.textTheme.headlineLarge?.copyWith(
-                                      color: theme.colorScheme.onPrimaryContainer,
-                                    ),
+                                    style: theme.textTheme.headlineLarge
+                                        ?.copyWith(
+                                          color: theme
+                                              .colorScheme
+                                              .onPrimaryContainer,
+                                        ),
                                   )
                                 : null,
                           ),
@@ -163,7 +211,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                         ],
                       ),
                       const SizedBox(height: 24),
-                      
+
                       // Display Name
                       TextFormField(
                         controller: _nameController,
@@ -184,7 +232,9 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
 
                       // Email (Read-only)
                       TextFormField(
-                        initialValue: auth.email.isEmpty ? 'demo@roomfinder.app' : auth.email,
+                        initialValue: auth.email.isEmpty
+                            ? 'demo@roomfinder.app'
+                            : auth.email,
                         enabled: false,
                         decoration: const InputDecoration(
                           labelText: 'Địa chỉ Email',
@@ -205,10 +255,12 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                           border: OutlineInputBorder(),
                         ),
                         validator: (value) {
-                          if (value != null && value.isNotEmpty) {
-                            final phoneRegex = RegExp(r'^[0-9+]{9,15}$');
-                            if (!phoneRegex.hasMatch(value)) {
-                              return 'Số điện thoại không hợp lệ';
+                          if (value != null && value.trim().isNotEmpty) {
+                            final RegExp phoneRegex = RegExp(
+                              r'^(03|05|07|08|09)[0-9]{8}$',
+                            );
+                            if (!phoneRegex.hasMatch(value.trim())) {
+                              return 'Số điện thoại không hợp lệ.';
                             }
                           }
                           return null;
@@ -264,7 +316,10 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                           ),
                           child: const Text(
                             'Lưu thay đổi',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ),

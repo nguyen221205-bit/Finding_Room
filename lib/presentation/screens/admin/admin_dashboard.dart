@@ -5,12 +5,12 @@ import '../../../core/constants/app_spacing.dart';
 import '../../../domain/entities/app_enums.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/landlord_request_provider.dart';
-import '../../providers/role_provider.dart';
 import '../../providers/room_provider.dart';
 import '../../widgets/count_tile.dart';
 import '../../widgets/empty_state.dart';
 import 'manage_requests_screen.dart';
 import 'manage_rooms_screen.dart';
+import 'landlord_management_screen.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -104,6 +104,22 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       Navigator.of(context).push(
                         MaterialPageRoute<void>(
                           builder: (_) => const ManageRoomsScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(
+                      Icons.people_outline,
+                      color: Colors.blue,
+                    ),
+                    title: const Text('Quản lý chủ nhà'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const LandlordManagementScreen(),
                         ),
                       );
                     },

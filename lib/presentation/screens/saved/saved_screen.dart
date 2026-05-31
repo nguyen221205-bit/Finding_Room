@@ -41,7 +41,8 @@ class SavedScreen extends StatelessWidget {
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute<void>(
-                                builder: (_) => RoomDetailScreen(roomId: room.id),
+                                builder: (_) =>
+                                    RoomDetailScreen(roomId: room.id),
                               ),
                             );
                           },

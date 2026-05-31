@@ -4,6 +4,7 @@ import '../../domain/entities/room_entity.dart';
 class RoomModel extends RoomEntity {
   const RoomModel({
     required super.id,
+    super.roomCode = '',
     required super.title,
     required super.price,
     required super.address,
@@ -21,6 +22,12 @@ class RoomModel extends RoomEntity {
     required super.landlordName,
     required super.landlordPhone,
     required super.landlordAvatarUrl,
+    super.usableArea,
+    super.length,
+    super.width,
+    super.district,
+    super.latitude,
+    super.longitude,
   });
 
   RoomModel copyWithModel({
@@ -33,6 +40,7 @@ class RoomModel extends RoomEntity {
   }) {
     return RoomModel(
       id: id,
+      roomCode: roomCode,
       title: title,
       price: price,
       address: address,
@@ -52,11 +60,18 @@ class RoomModel extends RoomEntity {
       landlordName: landlordName,
       landlordPhone: landlordPhone,
       landlordAvatarUrl: landlordAvatarUrl,
+      usableArea: usableArea,
+      length: length,
+      width: width,
+      district: district,
+      latitude: latitude,
+      longitude: longitude,
     );
   }
 
   static RoomModel fromEntity(RoomEntity e) => RoomModel(
     id: e.id,
+    roomCode: e.roomCode,
     title: e.title,
     price: e.price,
     address: e.address,
@@ -74,5 +89,11 @@ class RoomModel extends RoomEntity {
     landlordName: e.landlordName,
     landlordPhone: e.landlordPhone,
     landlordAvatarUrl: e.landlordAvatarUrl,
+    usableArea: e.usableArea,
+    length: e.length,
+    width: e.width,
+    district: e.district,
+    latitude: e.latitude,
+    longitude: e.longitude,
   );
 }

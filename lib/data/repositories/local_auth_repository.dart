@@ -1,6 +1,8 @@
 import 'package:hive/hive.dart';
 
 import '../../core/constants/storage_keys.dart';
+import '../../core/utils/business_code_generator.dart';
+import '../../core/utils/id_generator.dart';
 import '../../domain/entities/app_enums.dart';
 import '../../domain/entities/user_entity.dart';
 import '../models/local_user_model.dart';
@@ -49,6 +51,28 @@ class LocalAuthRepository {
         currentActiveRole: UserRole.user,
       ),
     );
+
+    // Tự động gán mã người dùng nếu bị thiếu (tương thích ngược)
+    final List<dynamic> keys = _usersBox.keys.toList();
+    for (final dynamic key in keys) {
+      final dynamic value = _usersBox.get(key);
+      if (value is Map<dynamic, dynamic>) {
+        if (value['userCode'] == null ||
+            (value['userCode'] as String).isEmpty) {
+          final String newCode = BusinessCodeGenerator.generate(
+            prefix: 'USR',
+            box: _usersBox,
+            codeExtractor: (entry) =>
+                entry is Map ? entry['userCode'] as String? : null,
+          );
+          final Map<String, dynamic> updatedMap = Map<String, dynamic>.from(
+            value,
+          );
+          updatedMap['userCode'] = newCode;
+          await _usersBox.put(key, updatedMap);
+        }
+      }
+    }
   }
 
   Future<bool> emailExists(String email) async {
@@ -69,8 +93,17 @@ class LocalAuthRepository {
     }
 
     final String id = _createUserId(normalizedEmail);
+    // Sinh mã userCode tuần tự và duy nhất
+    final String userCode = BusinessCodeGenerator.generate(
+      prefix: 'USR',
+      box: _usersBox,
+      codeExtractor: (entry) =>
+          entry is Map ? entry['userCode'] as String? : null,
+    );
+
     final LocalUserModel user = LocalUserModel(
       id: id,
+      userCode: userCode,
       username: username.trim().isEmpty ? 'User' : username.trim(),
       email: normalizedEmail,
       password: password,
@@ -119,6 +152,7 @@ class LocalAuthRepository {
       userId,
       LocalUserModel(
         id: user.id,
+        userCode: user.userCode,
         username: user.username,
         email: user.email,
         password: user.password,
@@ -146,6 +180,7 @@ class LocalAuthRepository {
     final LocalUserModel user = LocalUserModel.fromMap(value);
     final LocalUserModel updatedUser = LocalUserModel(
       id: user.id,
+      userCode: user.userCode,
       username: username,
       email: user.email,
       password: user.password,
@@ -173,6 +208,7 @@ class LocalAuthRepository {
       userId,
       LocalUserModel(
         id: user.id,
+        userCode: user.userCode,
         username: user.username,
         email: user.email,
         password: user.password,
@@ -184,6 +220,27 @@ class LocalAuthRepository {
         currentActiveRole: role,
       ).toMap(),
     );
+  }
+
+  Future<bool> isPhoneNumberUnique(
+    String phoneNumber,
+    String currentUserId,
+  ) async {
+    await ensureDefaultUsers();
+    final String trimmed = phoneNumber.trim();
+    if (trimmed.isEmpty) return true;
+
+    for (final dynamic value in _usersBox.values) {
+      if (value is! Map<dynamic, dynamic>) continue;
+
+      final LocalUserModel user = LocalUserModel.fromMap(value);
+      if (user.id != currentUserId &&
+          user.phoneNumber != null &&
+          user.phoneNumber!.trim() == trimmed) {
+        return false;
+      }
+    }
+    return true;
   }
 
   LocalUserModel? _findByEmail(String email) {
@@ -201,17 +258,23 @@ class LocalAuthRepository {
     return null;
   }
 
+  Future<List<UserEntity>> getAllUsers() async {
+    await ensureDefaultUsers();
+    final List<UserEntity> users = <UserEntity>[];
+    for (final dynamic value in _usersBox.values) {
+      if (value is Map<dynamic, dynamic>) {
+        users.add(LocalUserModel.fromMap(value).toEntity());
+      }
+    }
+    return users;
+  }
+
   Future<void> _seedUser(LocalUserModel user) async {
     if (_findByEmail(user.email) != null) return;
     await _usersBox.put(user.id, user.toMap());
   }
 
   String _createUserId(String email) {
-    final String prefix = email
-        .split('@')
-        .first
-        .replaceAll(RegExp(r'[^a-zA-Z0-9_]'), '_')
-        .toLowerCase();
-    return 'u_${prefix}_${DateTime.now().microsecondsSinceEpoch}';
+    return IdGenerator.generate('u');
   }
 }

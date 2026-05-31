@@ -2,6 +2,7 @@ import 'app_enums.dart';
 
 class UserEntity {
   final String id;
+  final String userCode;
   final String username;
   final String email;
   final List<UserRole> roles;
@@ -13,6 +14,7 @@ class UserEntity {
 
   const UserEntity({
     required this.id,
+    this.userCode = '',
     required this.username,
     required this.email,
     required this.roles,
@@ -25,8 +27,12 @@ class UserEntity {
 
   bool hasRole(UserRole role) => roles.contains(role);
 
+  bool get isAdmin => roles.contains(UserRole.admin);
+  bool get isLandlordApproved => roles.contains(UserRole.landlord) || isAdmin;
+
   UserEntity copyWith({
     String? id,
+    String? userCode,
     String? username,
     String? email,
     List<UserRole>? roles,
@@ -38,6 +44,7 @@ class UserEntity {
   }) {
     return UserEntity(
       id: id ?? this.id,
+      userCode: userCode ?? this.userCode,
       username: username ?? this.username,
       email: email ?? this.email,
       roles: roles ?? this.roles,

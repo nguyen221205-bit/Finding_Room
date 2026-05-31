@@ -28,6 +28,12 @@ class MockRooms {
         landlordPhone: '+84901234567',
         landlordAvatarUrl:
             'https://images.unsplash.com/photo-1599566150163-29194dcaad36?auto=format&fit=crop&w=200&q=60',
+        usableArea: 30.0,
+        length: 7.0,
+        width: 4.0,
+        district: 'Quận 1',
+        latitude: 10.7686,
+        longitude: 106.6942,
       ),
       RoomModel(
         id: 'r2',
@@ -53,6 +59,12 @@ class MockRooms {
         landlordPhone: '+84908886655',
         landlordAvatarUrl:
             'https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&w=200&q=60',
+        usableArea: 45.0,
+        length: 9.0,
+        width: 5.0,
+        district: 'Quận 1',
+        latitude: 10.7719,
+        longitude: 106.6983,
       ),
       RoomModel(
         id: 'r3',
@@ -77,6 +89,12 @@ class MockRooms {
         landlordPhone: '+84909990011',
         landlordAvatarUrl:
             'https://images.unsplash.com/photo-1590086782792-42dd2350140d?auto=format&fit=crop&w=200&q=60',
+        usableArea: 18.0,
+        length: 6.0,
+        width: 3.0,
+        district: 'Bình Thạnh',
+        latitude: 10.8032,
+        longitude: 106.7088,
       ),
       RoomModel(
         id: 'r4',

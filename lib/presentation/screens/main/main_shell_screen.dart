@@ -3,9 +3,10 @@ import 'package:provider/provider.dart';
 
 import '../../../domain/entities/app_enums.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/chat_provider.dart';
+import '../../providers/conversation_provider.dart';
 import '../../providers/role_provider.dart';
 import '../../providers/room_provider.dart';
+import '../../providers/notification_provider.dart';
 import '../admin/admin_dashboard.dart';
 import '../admin/manage_requests_screen.dart';
 import '../admin/manage_rooms_screen.dart';
@@ -27,15 +28,17 @@ class MainShellScreen extends StatefulWidget {
 class _MainShellScreenState extends State<MainShellScreen> {
   int _index = 0;
   UserRole? _lastEffectiveRole;
+  String? _lastUserId;
 
   @override
   void initState() {
     super.initState();
     final RoomProvider roomProvider = context.read<RoomProvider>();
-    final ChatProvider chatProvider = context.read<ChatProvider>();
+    final ConversationProvider conversationProvider = context
+        .read<ConversationProvider>();
     Future<void>.microtask(() async {
       await roomProvider.loadRoomsIfNeeded();
-      await chatProvider.loadThreadsIfNeeded();
+      await conversationProvider.loadConversations();
     });
   }
 
@@ -43,7 +46,16 @@ class _MainShellScreenState extends State<MainShellScreen> {
   Widget build(BuildContext context) {
     final AuthProvider auth = context.watch<AuthProvider>();
     final RoleProvider roleProvider = context.watch<RoleProvider>();
-    
+
+    if (auth.isAuthenticated && auth.userId != _lastUserId) {
+      _lastUserId = auth.userId;
+      final NotificationProvider notificationProvider = context
+          .read<NotificationProvider>();
+      Future<void>.microtask(
+        () => notificationProvider.loadNotifications(auth.userId),
+      );
+    }
+
     final UserRole effectiveRole;
     if (auth.hasRole(UserRole.admin)) {
       effectiveRole = roleProvider.activeMode == ActiveUserMode.landlord
@@ -51,7 +63,9 @@ class _MainShellScreenState extends State<MainShellScreen> {
           : UserRole.user;
     } else {
       final UserRole requestedRole = roleProvider.currentMode;
-      effectiveRole = auth.hasRole(requestedRole) ? requestedRole : UserRole.user;
+      effectiveRole = auth.hasRole(requestedRole)
+          ? requestedRole
+          : UserRole.user;
     }
 
     if (_lastEffectiveRole != effectiveRole) {

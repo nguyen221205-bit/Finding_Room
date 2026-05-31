@@ -9,6 +9,7 @@ class LocalLandlordRequestModel {
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
       'id': request.id,
+      'verificationCode': request.verificationCode,
       'userId': request.userId,
       'fullName': request.fullName,
       'phoneNumber': request.phoneNumber,
@@ -31,6 +32,7 @@ class LocalLandlordRequestModel {
   static LandlordRequestEntity fromMap(Map<dynamic, dynamic> map) {
     return LandlordRequestEntity(
       id: map['id'] as String? ?? '',
+      verificationCode: map['verificationCode'] as String? ?? '',
       userId: map['userId'] as String? ?? '',
       fullName: map['fullName'] as String? ?? '',
       phoneNumber: map['phoneNumber'] as String? ?? '',

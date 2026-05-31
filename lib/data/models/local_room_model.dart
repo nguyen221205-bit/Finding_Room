@@ -9,6 +9,7 @@ class LocalRoomModel {
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
       'id': room.id,
+      'roomCode': room.roomCode,
       'title': room.title,
       'price': room.price,
       'address': room.address,
@@ -26,12 +27,19 @@ class LocalRoomModel {
       'landlordName': room.landlordName,
       'landlordPhone': room.landlordPhone,
       'landlordAvatarUrl': room.landlordAvatarUrl,
+      'usableArea': room.usableArea,
+      'length': room.length,
+      'width': room.width,
+      'district': room.district,
+      'latitude': room.latitude,
+      'longitude': room.longitude,
     };
   }
 
   static RoomEntity fromMap(Map<dynamic, dynamic> map) {
     return RoomEntity(
       id: map['id'] as String? ?? '',
+      roomCode: map['roomCode'] as String? ?? '',
       title: map['title'] as String? ?? '',
       price: map['price'] as int? ?? 0,
       address: map['address'] as String? ?? '',
@@ -49,6 +57,12 @@ class LocalRoomModel {
       landlordName: map['landlordName'] as String? ?? 'Landlord',
       landlordPhone: map['landlordPhone'] as String? ?? '',
       landlordAvatarUrl: map['landlordAvatarUrl'] as String? ?? '',
+      usableArea: (map['usableArea'] as num?)?.toDouble(),
+      length: (map['length'] as num?)?.toDouble(),
+      width: (map['width'] as num?)?.toDouble(),
+      district: map['district'] as String?,
+      latitude: (map['latitude'] as num?)?.toDouble(),
+      longitude: (map['longitude'] as num?)?.toDouble(),
     );
   }
 

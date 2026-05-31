@@ -9,7 +9,9 @@ class AppColors {
 
   // ── Brand ───────────────────────────────────────────────────
   static const Color primary = Color(0xFF3B82F6); // Modern Light Blue #3B82F6
-  static const Color accent = Color(0xFF60A5FA); // Modern Accent Light Blue #60A5FA
+  static const Color accent = Color(
+    0xFF60A5FA,
+  ); // Modern Accent Light Blue #60A5FA
 
   // ── Semantic ────────────────────────────────────────────────
   static const Color success = Color(0xFF43A047); // Green 600

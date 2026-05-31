@@ -28,9 +28,7 @@ class PrimaryButton extends StatelessWidget {
                   key: ValueKey<String>('loading'),
                   width: 20,
                   height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.5,
-                  ),
+                  child: CircularProgressIndicator(strokeWidth: 2.5),
                 )
               : Row(
                   key: const ValueKey<String>('content'),

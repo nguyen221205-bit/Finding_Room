@@ -8,10 +8,12 @@ class LocalMessageModel {
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
       'id': message.id,
+      'messageCode': message.messageCode,
       'conversationId': message.conversationId,
       'senderId': message.senderId,
-      'message': message.message,
-      'createdAt': message.createdAt.toIso8601String(),
+      'receiverId': message.receiverId,
+      'content': message.content,
+      'timestamp': message.timestamp.toIso8601String(),
       'isRead': message.isRead,
     };
   }
@@ -19,11 +21,15 @@ class LocalMessageModel {
   static MessageEntity fromMap(Map<dynamic, dynamic> map) {
     return MessageEntity(
       id: map['id'] as String? ?? '',
+      messageCode: map['messageCode'] as String? ?? '',
       conversationId: map['conversationId'] as String? ?? '',
       senderId: map['senderId'] as String? ?? '',
-      message: map['message'] as String? ?? '',
-      createdAt:
-          DateTime.tryParse(map['createdAt'] as String? ?? '') ??
+      receiverId: map['receiverId'] as String? ?? '',
+      content: map['content'] as String? ?? map['message'] as String? ?? '',
+      timestamp:
+          DateTime.tryParse(
+            map['timestamp'] as String? ?? map['createdAt'] as String? ?? '',
+          ) ??
           DateTime.now(),
       isRead: map['isRead'] as bool? ?? false,
     );

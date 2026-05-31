@@ -17,6 +17,14 @@ import 'presentation/providers/favorite_provider.dart';
 import 'presentation/providers/landlord_request_provider.dart';
 import 'presentation/providers/role_provider.dart';
 import 'presentation/providers/room_provider.dart';
+import 'presentation/providers/conversation_provider.dart';
+import 'presentation/providers/message_provider.dart';
+import 'data/repositories/local_notification_storage.dart';
+import 'data/repositories/local_appointment_storage.dart';
+import 'data/repositories/local_settings_storage.dart';
+import 'presentation/providers/notification_provider.dart';
+import 'presentation/providers/appointment_provider.dart';
+import 'presentation/providers/settings_provider.dart';
 import 'presentation/screens/auth/login_screen.dart';
 import 'presentation/screens/main/main_shell_screen.dart';
 
@@ -42,6 +50,23 @@ class RoomFinderApp extends StatelessWidget {
           create: (_) => LocalLandlordRequestStorage(),
         ),
         Provider<LocalAuthRepository>(create: (_) => LocalAuthRepository()),
+        Provider<LocalNotificationStorage>(
+          create: (_) => LocalNotificationStorage(),
+        ),
+        Provider<LocalAppointmentStorage>(
+          create: (_) => LocalAppointmentStorage(),
+        ),
+        Provider<LocalSettingsStorage>(create: (_) => LocalSettingsStorage()),
+        ChangeNotifierProvider<NotificationProvider>(
+          create: (BuildContext ctx) => NotificationProvider(
+            storage: ctx.read<LocalNotificationStorage>(),
+            settingsStorage: ctx.read<LocalSettingsStorage>(),
+          ),
+        ),
+        ChangeNotifierProvider<AppointmentProvider>(
+          create: (BuildContext ctx) =>
+              AppointmentProvider(storage: ctx.read<LocalAppointmentStorage>()),
+        ),
         ChangeNotifierProvider<AuthProvider>(
           create: (BuildContext ctx) => AuthProvider(
             authRepository: ctx.read<LocalAuthRepository>(),
@@ -53,6 +78,26 @@ class RoomFinderApp extends StatelessWidget {
           create: (BuildContext ctx) => LandlordRequestProvider(
             storage: ctx.read<LocalLandlordRequestStorage>(),
           ),
+        ),
+        ChangeNotifierProxyProvider<AuthProvider, SettingsProvider>(
+          create: (BuildContext ctx) =>
+              SettingsProvider(storage: ctx.read<LocalSettingsStorage>()),
+          update:
+              (
+                BuildContext ctx,
+                AuthProvider auth,
+                SettingsProvider? settings,
+              ) {
+                final SettingsProvider provider =
+                    settings ??
+                    SettingsProvider(storage: ctx.read<LocalSettingsStorage>());
+                if (auth.isAuthenticated && auth.currentUser != null) {
+                  provider.loadPreferencesForUser(auth.currentUser!.id);
+                } else {
+                  provider.loadPreferencesForUser('');
+                }
+                return provider;
+              },
         ),
         ChangeNotifierProxyProvider<AuthProvider, RoleProvider>(
           create: (_) => RoleProvider(),
@@ -85,12 +130,22 @@ class RoomFinderApp extends StatelessWidget {
           create: (BuildContext ctx) =>
               ChatProvider(ctx.read<ChatRepository>()),
         ),
+        ChangeNotifierProvider<ConversationProvider>(
+          create: (_) => ConversationProvider()..loadConversations(),
+        ),
+        ChangeNotifierProvider<MessageProvider>(
+          create: (_) => MessageProvider()..loadMessages(),
+        ),
       ],
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'Room Rental Finder',
-        theme: AppTheme.light(),
-        home: const _AuthGate(),
+      child: Consumer<SettingsProvider>(
+        builder: (BuildContext context, SettingsProvider settings, _) {
+          return MaterialApp(
+            debugShowCheckedModeBanner: false,
+            title: 'Room Rental Finder',
+            theme: settings.isDarkMode ? AppTheme.dark() : AppTheme.light(),
+            home: const _AuthGate(),
+          );
+        },
       ),
     );
   }

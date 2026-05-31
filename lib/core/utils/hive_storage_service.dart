@@ -15,6 +15,9 @@ class HiveStorageService {
       Hive.openBox<dynamic>(HiveBoxes.landlordRequests),
       Hive.openBox<dynamic>(HiveBoxes.conversations),
       Hive.openBox<dynamic>(HiveBoxes.messages),
+      Hive.openBox<dynamic>(HiveBoxes.notifications),
+      Hive.openBox<dynamic>(HiveBoxes.appointments),
+      Hive.openBox<dynamic>(HiveBoxes.settings),
     ]);
   }
 }

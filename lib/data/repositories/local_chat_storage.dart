@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:hive/hive.dart';
 
 import '../../core/constants/storage_keys.dart';
+import '../../core/utils/id_generator.dart';
 import '../../domain/entities/chat_entities.dart';
 import '../../domain/entities/conversation_entity.dart';
 import '../../domain/entities/message_entity.dart';
@@ -52,10 +53,14 @@ class LocalChatStorage implements ChatRepository {
 
     final ConversationEntity conversation = ConversationEntity(
       id: conversationId,
+      conversationCode: 'CONV00000',
       participantIds: <String>[userId, landlordId],
       roomId: roomId,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
       lastMessage: '',
-      lastMessageTime: DateTime.fromMillisecondsSinceEpoch(0),
+      lastMessageSenderId: '',
+      unreadCount: 0,
     );
 
     unawaited(
@@ -80,11 +85,13 @@ class LocalChatStorage implements ChatRepository {
 
     final DateTime now = DateTime.now();
     final MessageEntity entity = MessageEntity(
-      id: 'm_${now.microsecondsSinceEpoch}',
+      id: IdGenerator.generate('m'),
+      messageCode: 'MSG00000',
       conversationId: conversationId,
       senderId: senderId,
-      message: trimmed,
-      createdAt: now,
+      receiverId: '',
+      content: trimmed,
+      timestamp: now,
       isRead: false,
     );
 
@@ -106,7 +113,7 @@ class LocalChatStorage implements ChatRepository {
         .toList();
 
     return messages..sort(
-      (MessageEntity a, MessageEntity b) => a.createdAt.compareTo(b.createdAt),
+      (MessageEntity a, MessageEntity b) => a.timestamp.compareTo(b.timestamp),
     );
   }
 
@@ -144,8 +151,8 @@ class LocalChatStorage implements ChatRepository {
               return ChatMessageEntity(
                 id: message.id,
                 threadId: message.conversationId,
-                text: message.message,
-                createdAt: message.createdAt,
+                text: message.content,
+                createdAt: message.timestamp,
                 isMe: message.senderId != landlordId,
                 isRead: message.isRead,
               );
@@ -175,7 +182,7 @@ class LocalChatStorage implements ChatRepository {
 
     final ConversationEntity conversation = LocalConversationModel.fromMap(
       value,
-    ).copyWith(lastMessage: message, lastMessageTime: time);
+    ).copyWith(lastMessage: message, updatedAt: time);
 
     unawaited(
       _conversationsBox.put(

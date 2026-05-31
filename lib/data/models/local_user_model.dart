@@ -3,6 +3,7 @@ import '../../domain/entities/user_entity.dart';
 
 class LocalUserModel {
   final String id;
+  final String userCode;
   final String username;
   final String email;
   final String password;
@@ -15,6 +16,7 @@ class LocalUserModel {
 
   const LocalUserModel({
     required this.id,
+    this.userCode = '',
     required this.username,
     required this.email,
     required this.password,
@@ -29,6 +31,7 @@ class LocalUserModel {
   UserEntity toEntity() {
     return UserEntity(
       id: id,
+      userCode: userCode,
       username: username,
       email: email,
       roles: roles,
@@ -43,6 +46,7 @@ class LocalUserModel {
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
       'id': id,
+      'userCode': userCode,
       'username': username,
       'email': email,
       'password': password,
@@ -61,6 +65,7 @@ class LocalUserModel {
 
     return LocalUserModel(
       id: map['id'] as String? ?? '',
+      userCode: map['userCode'] as String? ?? '',
       username: map['username'] as String? ?? 'User',
       email: map['email'] as String? ?? '',
       password: map['password'] as String? ?? '',
@@ -71,7 +76,9 @@ class LocalUserModel {
       phoneNumber: map['phoneNumber'] as String?,
       zaloNumber: map['zaloNumber'] as String?,
       bio: map['bio'] as String?,
-      currentActiveRole: _roleFromName(map['currentActiveRole'] as String? ?? 'user'),
+      currentActiveRole: _roleFromName(
+        map['currentActiveRole'] as String? ?? 'user',
+      ),
     );
   }
 
@@ -81,6 +88,7 @@ class LocalUserModel {
   }) {
     return LocalUserModel(
       id: user.id,
+      userCode: user.userCode,
       username: user.username,
       email: user.email,
       password: password,

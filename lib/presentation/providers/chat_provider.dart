@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../data/repositories/chat_repository.dart';
 import '../../data/repositories/local_chat_storage.dart';
+import '../../core/utils/id_generator.dart';
 import '../../domain/entities/chat_entities.dart';
 
 class ChatProvider extends ChangeNotifier {
@@ -124,7 +125,7 @@ class ChatProvider extends ChangeNotifier {
     }
 
     final ChatMessageEntity message = ChatMessageEntity(
-      id: DateTime.now().microsecondsSinceEpoch.toString(),
+      id: IdGenerator.generate('chat_msg'),
       threadId: threadId,
       text: trimmed,
       createdAt: DateTime.now(),

@@ -12,7 +12,10 @@ class AppSnackbar {
     showWithMessenger(ScaffoldMessenger.of(context), message);
   }
 
-  static void showWithMessenger(ScaffoldMessengerState messenger, String message) {
+  static void showWithMessenger(
+    ScaffoldMessengerState messenger,
+    String message,
+  ) {
     messenger
       ..clearSnackBars()
       ..showSnackBar(SnackBar(content: Text(message)));
@@ -23,7 +26,10 @@ class AppSnackbar {
     successWithMessenger(ScaffoldMessenger.of(context), message);
   }
 
-  static void successWithMessenger(ScaffoldMessengerState messenger, String message) {
+  static void successWithMessenger(
+    ScaffoldMessengerState messenger,
+    String message,
+  ) {
     messenger
       ..clearSnackBars()
       ..showSnackBar(
@@ -40,7 +46,10 @@ class AppSnackbar {
     errorWithMessenger(ScaffoldMessenger.of(context), message);
   }
 
-  static void errorWithMessenger(ScaffoldMessengerState messenger, String message) {
+  static void errorWithMessenger(
+    ScaffoldMessengerState messenger,
+    String message,
+  ) {
     messenger
       ..clearSnackBars()
       ..showSnackBar(

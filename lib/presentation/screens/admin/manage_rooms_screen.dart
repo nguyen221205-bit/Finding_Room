@@ -4,14 +4,13 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../domain/entities/app_enums.dart';
 import '../../../domain/entities/room_entity.dart';
+import '../../../domain/entities/user_entity.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/role_provider.dart';
 import '../../providers/room_provider.dart';
-import '../../widgets/app_dialogs.dart';
-import '../../widgets/app_snackbar.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/loading_placeholder.dart';
 import '../../widgets/status_badge.dart';
+import 'room_review_detail_screen.dart';
 
 class ManageRoomsScreen extends StatefulWidget {
   const ManageRoomsScreen({super.key});
@@ -21,45 +20,10 @@ class ManageRoomsScreen extends StatefulWidget {
 }
 
 class _ManageRoomsScreenState extends State<ManageRoomsScreen> {
-  String? _processingRoomId;
-
-  Future<String?> _askRejectReason(BuildContext context) {
-    final TextEditingController reasonController = TextEditingController();
-
-    return showDialog<String>(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: const Text('Reject room listing'),
-          content: TextField(
-            controller: reasonController,
-            maxLines: 3,
-            autofocus: true,
-            decoration: const InputDecoration(
-              labelText: 'Reason',
-              hintText: 'Explain why this room was rejected (e.g. details missing)',
-            ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () {
-                Navigator.of(dialogContext).pop(reasonController.text);
-              },
-              child: const Text('Reject'),
-            ),
-          ],
-        );
-      },
-    ).whenComplete(reasonController.dispose);
-  }
-
   @override
   Widget build(BuildContext context) {
     final AuthProvider auth = context.watch<AuthProvider>();
+    final theme = Theme.of(context);
     final bool canAccess = auth.hasRole(UserRole.admin);
     if (!canAccess) {
       return const Scaffold(
@@ -74,13 +38,18 @@ class _ManageRoomsScreenState extends State<ManageRoomsScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Manage Rooms')),
+      appBar: AppBar(
+        title: const Text('Kiểm duyệt phòng trọ'),
+        elevation: 0,
+        backgroundColor: theme.scaffoldBackgroundColor,
+        foregroundColor: theme.colorScheme.onSurface,
+      ),
       body: Consumer<RoomProvider>(
-        builder: (BuildContext context, RoomProvider provider, _) {
-          if (provider.isLoading && !provider.hasLoaded) {
-            return Padding(
+        builder: (BuildContext context, RoomProvider provider, Widget? child) {
+          if (provider.isLoading && provider.rooms.isEmpty) {
+            return const Padding(
               padding: AppSpacing.paddingAllLg,
-              child: const LoadingPlaceholderList(itemCount: 3),
+              child: LoadingPlaceholderList(itemCount: 3),
             );
           }
 
@@ -88,8 +57,8 @@ class _ManageRoomsScreenState extends State<ManageRoomsScreen> {
           if (rooms.isEmpty) {
             return const EmptyState(
               icon: Icons.home_outlined,
-              title: 'No rooms found',
-              message: 'Submitted room listings will appear here.',
+              title: 'Không tìm thấy phòng nào',
+              message: 'Các tin đăng phòng trọ chờ duyệt sẽ xuất hiện ở đây.',
             );
           }
 
@@ -100,131 +69,158 @@ class _ManageRoomsScreenState extends State<ManageRoomsScreen> {
                 AppSpacing.vMd,
             itemBuilder: (BuildContext context, int index) {
               final RoomEntity room = rooms[index];
-              final bool isProcessing = _processingRoomId == room.id;
 
               final StatusBadge badge = switch (room.status) {
-                RoomStatus.pending => const StatusBadge.pending(),
-                RoomStatus.approved => const StatusBadge.approved(),
-                RoomStatus.rejected => const StatusBadge.rejected(),
+                RoomStatus.pending => const StatusBadge.pending(
+                  label: 'Chờ duyệt',
+                ),
+                RoomStatus.approved => const StatusBadge.approved(
+                  label: 'Đã duyệt',
+                ),
+                RoomStatus.rejected => const StatusBadge.rejected(
+                  label: 'Từ chối',
+                ),
+                RoomStatus.hiddenByAdmin => const StatusBadge.rejected(
+                  label: 'Đã ẩn',
+                ),
               };
 
               return Card(
-                child: Padding(
-                  padding: AppSpacing.paddingAllLg,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Row(
-                        children: <Widget>[
-                          Expanded(
-                            child: Text(
-                              room.title,
-                              style: Theme.of(context).textTheme.titleMedium,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          badge,
-                        ],
+                clipBehavior: Clip.antiAlias,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: BorderSide(color: Colors.grey[200]!),
+                ),
+                elevation: 0,
+                child: InkWell(
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (context) =>
+                            AdminRoomDetailScreenV2(roomId: room.id),
                       ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Owner: ${room.ownerId}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      if (room.rejectionReason != null &&
-                          room.rejectionReason!.isNotEmpty) ...<Widget>[
-                        const SizedBox(height: 6),
-                        Text(
-                          'Reason: ${room.rejectionReason!}',
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                      if (room.status == RoomStatus.pending) ...<Widget>[
-                        AppSpacing.vMd,
+                    );
+                  },
+                  child: Padding(
+                    padding: AppSpacing.paddingAllLg,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
                         Row(
                           children: <Widget>[
                             Expanded(
-                              child: FilledButton(
-                                onPressed: isProcessing
-                                    ? null
-                                    : () async {
-                                        final messenger = ScaffoldMessenger.of(context);
-                                        final bool confirm = await AppDialogs.confirmApprove(
-                                          context,
-                                          "room listing: '${room.title}'",
-                                        );
-                                        if (!confirm || !mounted) return;
-
-                                        setState(
-                                          () => _processingRoomId = room.id,
-                                        );
-                                        final bool ok = provider.approveRoom(
-                                          room.id,
-                                        );
-                                        if (mounted) {
-                                          setState(
-                                            () => _processingRoomId = null,
-                                          );
-                                          AppSnackbar.showWithMessenger(
-                                            messenger,
-                                            ok
-                                                ? 'Room approved.'
-                                                : 'Could not approve room.',
-                                          );
-                                        }
-                                      },
-                                child: isProcessing
-                                    ? const SizedBox(
-                                        width: 18,
-                                        height: 18,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      )
-                                    : const Text('Approve'),
+                              child: Text(
+                                room.title,
+                                style: Theme.of(context).textTheme.titleMedium
+                                    ?.copyWith(fontWeight: FontWeight.bold),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            AppSpacing.hMd,
-                            Expanded(
-                              child: OutlinedButton(
-                                onPressed: isProcessing
-                                    ? null
-                                    : () async {
-                                        final messenger = ScaffoldMessenger.of(context);
-                                        final String? reason =
-                                            await _askRejectReason(context);
-                                        if (reason == null) return;
-
-                                        if (!mounted) return;
-                                        setState(
-                                          () => _processingRoomId = room.id,
-                                        );
-                                        final bool ok = provider.rejectRoom(
-                                          roomId: room.id,
-                                          reason: reason,
-                                        );
-                                        if (mounted) {
-                                          setState(
-                                            () => _processingRoomId = null,
-                                          );
-                                          AppSnackbar.showWithMessenger(
-                                            messenger,
-                                            ok
-                                                ? 'Room rejected.'
-                                                : 'Could not reject room.',
-                                          );
-                                        }
-                                      },
-                                child: const Text('Reject'),
+                            const SizedBox(width: 8),
+                            badge,
+                          ],
+                        ),
+                        if (room.roomCode.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.tag,
+                                size: 14,
+                                color: Colors.blue.shade700,
                               ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Mã tin đăng: ${room.roomCode}',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blue.shade700,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                        const SizedBox(height: 8),
+                        FutureBuilder<UserEntity?>(
+                          future: context.read<AuthProvider>().getUserById(
+                            room.ownerId,
+                          ),
+                          builder: (context, snapshot) {
+                            final user = snapshot.data;
+                            final displayOwner =
+                                user != null && user.userCode.isNotEmpty
+                                ? 'Chủ nhà: ${user.username} (${user.userCode})'
+                                : 'Chủ nhà: ${room.landlordName}';
+                            return Row(
+                              children: [
+                                const Icon(
+                                  Icons.person_outline,
+                                  size: 14,
+                                  color: Colors.grey,
+                                ),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    displayOwner,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: Colors.grey[700],
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                        if (room.rejectionReason != null &&
+                            room.rejectionReason!.isNotEmpty) ...<Widget>[
+                          const SizedBox(height: 8),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.red.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'Lý do từ chối: ${room.rejectionReason!}',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.red,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 12),
+                        const Divider(height: 1),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Text(
+                              'Xem chi tiết & duyệt',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.primary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(
+                              Icons.arrow_forward_ios,
+                              size: 12,
+                              color: Theme.of(context).colorScheme.primary,
                             ),
                           ],
                         ),
                       ],
-                    ],
+                    ),
                   ),
                 ),
               );
